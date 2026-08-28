@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voice-to-strudel"
+version = "0.1.0"
+description = "Turn a monophonic hum into editable pitch data and Strudel note code."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Burooj" }]
+dependencies = [
+  "numpy>=1.26,<3",
+  "praat-parselmouth>=0.4.6,<0.5",
+]
+
+[project.optional-dependencies]
+fusion = ["aubio>=0.4.9,<0.5"]
+test = ["pytest>=8,<9"]
+
+[project.scripts]
+voice-to-strudel = "voice_to_strudel.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
