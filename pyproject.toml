@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Turn a monophonic hum into editable pitch data and Strudel note code."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { file = "LICENSE" }
+license = { text = "GPL-3.0-or-later" }
 authors = [{ name = "Burooj" }]
 dependencies = [
   "numpy>=1.26,<3",
@@ -22,10 +22,12 @@ test = ["pytest>=8,<9"]
 [project.scripts]
 voice-to-strudel = "voice_to_strudel.cli:main"
 
+[project.urls]
+License = "https://www.gnu.org/licenses/gpl-3.0.html"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
 addopts = "-q"
 testpaths = ["tests"]
-

@@ -15,8 +15,7 @@ Python 3.11+ and `ffmpeg` are required. `ffmpeg` decodes WAV/M4A and records fro
 the microphone without adding an audio framework to the Python process.
 
 ```bash
-git clone <repository-url> voice-to-strudel
-cd voice-to-strudel
+cd /path/to/voice-to-strudel
 uv sync --extra test
 ```
 
@@ -60,9 +59,12 @@ uv sync --extra fusion --extra test
 uv run voice-to-strudel benchmark melody.wav --out out/benchmark.json
 ```
 
-The report records wall time, peak RSS, voicing coverage, octave discontinuities,
+The report records wall time, peak RSS, voicing coverage, octave-error candidates,
 contour disagreement, and an explicit blank human-preference field. Fusion
 should not become the product default until listening supplies that last value.
+
+The named pilot fixture and current result are recorded in
+[`docs/pilot-benchmark.md`](docs/pilot-benchmark.md).
 
 ## Limits
 
@@ -76,9 +78,8 @@ should not become the product default until listening supplies that last value.
 
 ## Dependency licences
 
-- Voice to Strudel: MIT
+- Voice to Strudel: GPL-3.0-or-later
 - NumPy: BSD-3-Clause
 - Parselmouth: GPL-3.0-or-later (Praat itself is GPL-3.0-or-later)
 - aubio, optional fusion benchmark: GPL-3.0-or-later
 - ffmpeg: build-dependent; the host binary may be LGPL or GPL
-
