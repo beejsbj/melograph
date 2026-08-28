@@ -64,8 +64,10 @@ uv run voice-to-strudel benchmark melody.wav --out out/benchmark.json
 ```
 
 The report records wall time, peak RSS, voicing coverage, octave-error candidates,
-contour disagreement, and an explicit blank human-preference field. Fusion
-should not become the product default until listening supplies that last value.
+contour disagreement, and an explicit blank human-preference field. It also
+writes `<report-stem>-audition/index.html` with source, Praat, and fusion players
+for every take. Fusion should not become the product default until listening
+supplies that last value.
 
 The named pilot fixture and current result are recorded in
 [`docs/pilot-benchmark.md`](docs/pilot-benchmark.md).

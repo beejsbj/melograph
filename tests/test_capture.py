@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from voice_to_strudel.audio import write_wav
+from voice_to_strudel.benchmark import benchmark_file
 from voice_to_strudel.pipeline import capture
 
 
@@ -30,3 +31,16 @@ def test_capture_writes_editable_and_audition_artifacts(tmp_path: Path) -> None:
         "strudel.js", "synth.wav", "contour-synth.wav", "audition.html",
     ):
         assert (output / relative).is_file()
+
+
+def test_benchmark_writes_a_human_audition_surface(tmp_path: Path) -> None:
+    sample_rate = 22_050
+    times = np.arange(sample_rate) / sample_rate
+    source = tmp_path / "tone.wav"
+    write_wav(source, 0.3 * np.sin(2 * np.pi * 220 * times), sample_rate)
+    report_path = tmp_path / "benchmark.json"
+    report = benchmark_file(source, report_path, runs=1)
+    assert report["human_preference"] == {"winner": None, "notes": None}
+    assert (tmp_path / "benchmark-audition" / "index.html").is_file()
+    assert list((tmp_path / "benchmark-audition").glob("praat-*.wav"))
+    assert list((tmp_path / "benchmark-audition").glob("fusion-*.wav"))
