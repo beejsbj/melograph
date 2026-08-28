@@ -40,10 +40,14 @@ The output directory contains:
 - `analysis.json`: editable phrase boundaries and note events
 - `strudel.js`: directly runnable numeric-note patterns
 - `audition.html`: local A/B players for every phrase
-- `synth.wav`: a plain sine rendering of the detected contour
+- `contour-synth.wav`: a sine rendering that follows the tracked contour
+- `synth.wav`: a quantized sine rendering of the editable note events
 
-After correcting pitches, attacks, durations, or phrase boundaries in
-`analysis.json`, rebuild the derived files without tracking the audio again:
+In `analysis.json`, event and phrase `start_seconds`/`end_seconds` plus event
+`midi` and `type` are authoritative. To add or remove an attack, split or merge
+events; `duration_seconds`, confidence, attack source, and gesture are derived
+diagnostics. Invalid overlaps or events outside an edited phrase are rejected
+rather than silently time-stretched. Rebuild without tracking the audio again:
 
 ```bash
 uv run voice-to-strudel render out/melody/analysis.json
@@ -71,8 +75,9 @@ The named pilot fixture and current result are recorded in
 - Input must be monophonic; accompaniment and polyphony are out of scope.
 - Note boundaries are candidates. Legato re-attacks without an energy dip may
   need a manual edit.
-- Slides and vibrato remain in `contour.csv`; the event summary records their
-  pitch span, while ordinary Strudel notes necessarily quantize the center pitch.
+- Slides and vibrato remain in `contour.csv` and `contour-synth.wav`; the event
+  summary records their pitch span, while ordinary Strudel notes necessarily
+  reduce each gesture to one editable centre pitch.
 - Microphone capture depends on an `ffmpeg` input device (`pulse`/`alsa` on
   Linux, `avfoundation` on macOS). Use a recorded file if device discovery fails.
 

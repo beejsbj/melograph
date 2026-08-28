@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from voice_to_strudel.model import Audio, PitchTrack
-from voice_to_strudel.pitch import agreement_fusion
+from voice_to_strudel.pitch import agreement_fusion, frame_rms_db
 from voice_to_strudel.segment import (
     AnalysisConfig,
     _compact_cuts,
@@ -12,6 +12,8 @@ from voice_to_strudel.segment import (
     classify_gesture,
     phrase_spans,
     repair_octave_spikes,
+    spectral_flux,
+    stable_pitch_boundaries,
 )
 
 
@@ -53,6 +55,27 @@ def test_slide_and_vibrato_are_gestures_not_note_chatter() -> None:
     vibrato = classify_gesture(60.0 + 0.45 * np.sin(2 * np.pi * 6 * times), times)
     assert slide and slide["type"] == "slide"
     assert vibrato and vibrato["type"] == "vibrato_or_wobble"
+
+
+def test_stepwise_ascent_is_not_collapsed_into_a_slide() -> None:
+    times = np.arange(45) * 0.01
+    staircase = np.repeat([60.0, 62.0, 64.0], 15)
+    assert classify_gesture(staircase, times) is None
+    assert stable_pitch_boundaries(staircase, times, 0.10) == [15, 30]
+
+
+def test_real_amplitude_valley_produces_one_reattack() -> None:
+    sample_rate = 10_000
+    sample_times = np.arange(sample_rate) / sample_rate
+    envelope = np.full(sample_rate, 0.4)
+    envelope[4_200:5_000] = 0.02
+    audio = Audio(envelope * np.sin(2 * np.pi * 220 * sample_times), sample_rate)
+    times = np.arange(0.05, 0.95, 0.01)
+    rms = frame_rms_db(audio, times)
+    flux = spectral_flux(audio, times)
+    attacks = attack_candidates(rms, flux, 0, len(times), times, AnalysisConfig(reattack_db=4.0))
+    assert len(attacks) == 1
+    assert 0.47 <= times[attacks[0][0]] <= 0.54
 
 
 def test_silence_produces_no_phrases() -> None:

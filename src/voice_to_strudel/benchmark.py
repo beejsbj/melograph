@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import resource
 import statistics
 import subprocess
@@ -27,7 +26,7 @@ def benchmark_file(source: Path, output: Path, runs: int = 3) -> dict:
                 sys.executable, "-m", "voice_to_strudel.cli", "_bench-worker",
                 str(wav), "--tracker", tracker, "--runs", str(runs),
             ]
-            process = subprocess.run(command, capture_output=True, text=True)
+            process = subprocess.run(command, capture_output=True, text=True, check=False)
             if process.returncode:
                 results.append({"tracker": tracker, "error": process.stderr.strip() or process.stdout.strip()})
             else:
@@ -60,12 +59,12 @@ def benchmark_worker(wav: Path, tracker_name: str, runs: int) -> dict:
             disagreement = {
                 "median_cents": round(float(np.median(cents)), 3) if len(cents) else None,
                 "frames_over_gate": int(np.sum(cents > 80.0)),
-                "comparable_frames": int(len(cents)),
+                "comparable_frames": len(cents),
             }
         else:
             raise ValueError(f"unknown tracker: {tracker_name}")
-        analysis, _frames = analyze_events(audio, selected, AnalysisConfig())
-        return selected, analysis, disagreement
+        analysis, frames = analyze_events(audio, selected, AnalysisConfig())
+        return selected, analysis, frames, disagreement
 
     operation()  # warm imports and native libraries
     walls: list[float] = []
@@ -78,10 +77,7 @@ def benchmark_worker(wav: Path, tracker_name: str, runs: int) -> dict:
         walls.append(time.perf_counter() - wall_start)
         cpus.append(time.process_time() - cpu_start)
     assert final is not None
-    selected, analysis, disagreement = final
-    midi = selected.midi
-    voiced_midi = midi[np.isfinite(midi)]
-    jumps = np.abs(np.diff(voiced_midi)) if len(voiced_midi) > 1 else np.array([])
+    selected, analysis, frames, disagreement = final
     rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     peak_mib = rss / (1024 * 1024 if sys.platform == "darwin" else 1024)
     return {
@@ -93,7 +89,18 @@ def benchmark_worker(wav: Path, tracker_name: str, runs: int) -> dict:
         "realtime_factor": round(statistics.median(walls) / audio.duration, 6),
         "peak_rss_mib": round(peak_mib, 3),
         "voicing_coverage": round(float(np.mean(selected.voiced)), 4),
-        "octave_error_candidates": int(np.sum((jumps >= 11.0) & (jumps <= 13.0))),
+        "octave_error_candidates_raw": octave_error_candidates(selected.midi),
+        "octave_error_candidates_processed": octave_error_candidates(frames["midi_processed"]),
         "phrase_count": len(analysis["phrases"]),
         "contour_disagreement": disagreement,
     }
+
+
+def octave_error_candidates(midi: np.ndarray) -> int:
+    valid_pairs = np.isfinite(midi[:-1]) & np.isfinite(midi[1:])
+    jumps = np.abs(np.diff(midi)[valid_pairs])
+    if not len(jumps):
+        return 0
+    nearest_octaves = np.rint(jumps / 12.0)
+    octave_like = (nearest_octaves >= 1) & (np.abs(jumps - 12.0 * nearest_octaves) <= 1.0)
+    return int(np.sum(octave_like))

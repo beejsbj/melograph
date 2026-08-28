@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
+from itertools import pairwise
 
 import numpy as np
 
@@ -19,7 +20,7 @@ class AnalysisConfig:
 
 
 def round_half_up(value: float) -> int:
-    return int(Decimal(str(value)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return int(Decimal(str(value)).quantize(Decimal(1), rounding=ROUND_HALF_UP))
 
 
 def median_smooth(values: np.ndarray, width: int = 7) -> np.ndarray:
@@ -169,27 +170,32 @@ def stable_pitch_boundaries(
     minimum_frames = max(1, round(minimum_seconds / float(np.median(np.diff(times)))))
     if len(midi) < minimum_frames * 2:
         return []
-    # A sustained monotonic move is a gesture, not a chromatic staircase.
-    span = float(np.percentile(midi, 90) - np.percentile(midi, 10))
-    correlation = float(np.corrcoef(np.arange(len(midi)), midi)[0, 1]) if np.std(midi) else 0.0
-    if span >= 1.5 and abs(correlation) >= 0.85:
+    if is_continuous_slide(midi):
         return []
-    threshold = change_cents / 100.0
-    boundaries: list[int] = []
-    current_center = float(np.median(midi[:minimum_frames]))
-    index = minimum_frames
-    while index <= len(midi) - minimum_frames:
-        candidate_center = float(np.median(midi[index : index + minimum_frames]))
-        if (
-            abs(candidate_center - current_center) >= threshold
-            and round_half_up(candidate_center) != round_half_up(current_center)
-        ):
-            boundaries.append(index)
-            current_center = candidate_center
-            index += minimum_frames
-        else:
-            index += 1
-    return boundaries
+    quantized = np.asarray([round_half_up(float(value)) for value in midi], dtype=int)
+    runs = _runs(quantized)
+    while len(runs) > 1:
+        short_index = next(
+            (index for index, (start, end, _pitch) in enumerate(runs) if end - start < minimum_frames),
+            None,
+        )
+        if short_index is None:
+            break
+        start, end, pitch = runs[short_index]
+        neighbours: list[int] = []
+        if short_index:
+            neighbours.append(runs[short_index - 1][2])
+        if short_index + 1 < len(runs):
+            neighbours.append(runs[short_index + 1][2])
+        if not neighbours:
+            break
+        quantized[start:end] = min(neighbours, key=lambda candidate: abs(candidate - pitch))
+        runs = _runs(quantized)
+    return [
+        runs[index][0]
+        for index in range(1, len(runs))
+        if abs(runs[index][2] - runs[index - 1][2]) * 100.0 >= change_cents
+    ]
 
 
 def attack_candidates(
@@ -205,21 +211,46 @@ def attack_candidates(
     local_flux_z = robust_z(flux[start:end])
     candidates: list[tuple[int, float, str]] = []
     lookahead = max(2, round(0.12 / float(np.median(np.diff(times)))))
-    for local_index in range(1, end - start - 1):
+    local_rms = rms_db[start:end]
+    for local_index in range(lookahead, end - start - lookahead):
         index = start + local_index
-        if local_flux_z[local_index] < 3.0:
-            continue
-        before = rms_db[max(start, index - lookahead) : index + 1]
-        after = rms_db[index : min(end, index + lookahead + 1)]
-        rise = float(np.max(after) - np.min(before))
-        if rise >= config.reattack_db:
-            candidates.append((index, float(local_flux_z[local_index] + rise / 6.0), "flux+energy"))
-    refractory = config.attack_refractory_seconds
+        before_peak = float(np.max(local_rms[local_index - lookahead : local_index]))
+        after = local_rms[local_index : local_index + lookahead + 1]
+        valley = float(local_rms[local_index])
+        after_peak = float(np.max(after))
+        if before_peak - valley >= config.reattack_db * 0.6 and after_peak - valley >= config.reattack_db:
+            recovery_offset = int(np.argmax(np.diff(after))) + 1
+            recovery_index = index + recovery_offset
+            score = (after_peak - valley) / config.reattack_db + max(0.0, local_flux_z[local_index])
+            candidates.append((recovery_index, float(score), "energy-valley"))
+        elif (
+            local_flux_z[local_index] >= 4.0
+            and local_flux_z[local_index] >= local_flux_z[local_index - 1]
+            and local_flux_z[local_index] >= local_flux_z[local_index + 1]
+        ):
+            candidates.append((index, float(local_flux_z[local_index]), "spectral-flux"))
+    refractory = max(config.attack_refractory_seconds, 0.12)
     kept: list[tuple[int, float, str]] = []
     for candidate in sorted(candidates, key=lambda item: item[1], reverse=True):
         if all(abs(times[candidate[0]] - times[other[0]]) >= refractory for other in kept):
             kept.append(candidate)
     return sorted(kept)
+
+
+def is_continuous_slide(midi: np.ndarray) -> bool:
+    if len(midi) < 6:
+        return False
+    smoothed = median_smooth(np.asarray(midi, dtype=float), 5)
+    differences = np.diff(smoothed)
+    moving = np.abs(differences) >= 0.01
+    if float(np.mean(moving)) < 0.65:
+        return False
+    direction = np.sign(float(np.median(differences[moving])))
+    if direction == 0:
+        return False
+    consistent = float(np.mean(np.sign(differences[moving]) == direction))
+    span = float(np.percentile(smoothed, 90) - np.percentile(smoothed, 10))
+    return span >= 1.5 and consistent >= 0.85
 
 
 def classify_gesture(midi: np.ndarray, times: np.ndarray) -> dict[str, float | str] | None:
@@ -230,10 +261,21 @@ def classify_gesture(midi: np.ndarray, times: np.ndarray) -> dict[str, float | s
     end_pitch = float(np.median(midi[-quarter:]))
     span_cents = float((np.percentile(midi, 90) - np.percentile(midi, 10)) * 100.0)
     delta_cents = (end_pitch - start_pitch) * 100.0
-    if abs(delta_cents) >= 150.0 and span_cents >= 150.0 and times[-1] - times[0] >= 0.12:
+    if (
+        abs(delta_cents) >= 150.0
+        and span_cents >= 150.0
+        and times[-1] - times[0] >= 0.12
+        and is_continuous_slide(midi)
+    ):
         return {"type": "slide", "delta_cents": round(delta_cents, 1), "span_cents": round(span_cents, 1)}
-    if span_cents >= 60.0 and times[-1] - times[0] >= 0.25:
-        return {"type": "vibrato_or_wobble", "span_cents": round(span_cents, 1)}
+    if 60.0 <= span_cents <= 200.0 and times[-1] - times[0] >= 0.25:
+        trend = np.linspace(start_pitch, end_pitch, len(midi))
+        residual = midi - trend
+        signs = np.sign(residual)
+        signs = signs[signs != 0]
+        sign_changes = int(np.sum(signs[1:] != signs[:-1])) if len(signs) > 1 else 0
+        if sign_changes >= 4:
+            return {"type": "vibrato_or_wobble", "span_cents": round(span_cents, 1)}
     return None
 
 
@@ -287,7 +329,7 @@ def analyze_events(audio: Audio, track: PitchTrack, config: AnalysisConfig) -> t
                 minimum_frames,
             )
             attack_by_index = {candidate[0]: candidate for candidate in attacks}
-            for start, end in zip(ordered, ordered[1:]):
+            for start, end in pairwise(ordered):
                 if end <= start:
                     continue
                 event_midi = processed[start:end]

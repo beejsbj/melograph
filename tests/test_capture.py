@@ -27,6 +27,6 @@ def test_capture_writes_editable_and_audition_artifacts(tmp_path: Path) -> None:
     assert analysis["source"]["original_sha256"]
     for relative in (
         "original.wav", "source.wav", "contour.csv", "events.csv", "analysis.json",
-        "strudel.js", "synth.wav", "audition.html",
+        "strudel.js", "synth.wav", "contour-synth.wav", "audition.html",
     ):
         assert (output / relative).is_file()

@@ -4,7 +4,6 @@ import numpy as np
 
 from .model import Audio, PitchTrack
 
-
 HOP_SECONDS = 256 / 22_050
 
 

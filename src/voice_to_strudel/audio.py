@@ -10,7 +10,6 @@ import numpy as np
 
 from .model import Audio
 
-
 SAMPLE_RATE = 22_050
 
 

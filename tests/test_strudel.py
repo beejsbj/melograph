@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from voice_to_strudel.editing import EditError, normalize_analysis
 from voice_to_strudel.strudel import phrase_pattern, serialize_strudel
 
 
@@ -29,3 +30,26 @@ def test_serialization_is_stable_and_keeps_repeated_attacks() -> None:
 def test_empty_capture_is_runnable_silence() -> None:
     assert serialize_strudel({"phrases": []}).endswith("silence\n")
 
+
+def test_decimal_midi_is_serialized_without_truncation() -> None:
+    value = phrase()
+    value["events"][0]["midi"] = 60.75
+    assert '60.75@20' in phrase_pattern(value)
+
+
+def test_edit_normalization_recomputes_durations() -> None:
+    analysis = {"source": {"normalized_file": "source.wav"}, "phrases": [phrase()]}
+    analysis["phrases"][0]["events"][0]["duration_seconds"] = 99
+    normalized = normalize_analysis(analysis)
+    assert normalized["phrases"][0]["events"][0]["duration_seconds"] == 0.2
+
+
+def test_phrase_edit_cannot_silently_compress_events() -> None:
+    analysis = {"source": {"normalized_file": "source.wav"}, "phrases": [phrase()]}
+    analysis["phrases"][0]["end_seconds"] = 0.65
+    try:
+        normalize_analysis(analysis)
+    except EditError as error:
+        assert "inside its phrase boundaries" in str(error)
+    else:
+        raise AssertionError("invalid phrase edit should have been rejected")

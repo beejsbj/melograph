@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-from decimal import Decimal, ROUND_HALF_UP
-
+from decimal import ROUND_HALF_UP, Decimal
 
 TICKS_PER_SECOND = 100
 
 
 def to_tick(seconds: float) -> int:
-    return int((Decimal(str(seconds)) * TICKS_PER_SECOND).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return int((Decimal(str(seconds)) * TICKS_PER_SECOND).quantize(Decimal(1), rounding=ROUND_HALF_UP))
 
 
 def phrase_pattern(phrase: dict) -> str:
@@ -20,7 +19,7 @@ def phrase_pattern(phrase: dict) -> str:
         event_end = max(event_start + 1, to_tick(event["end_seconds"]))
         if event_start > cursor:
             tokens.append(_weighted("~", event_start - cursor))
-        token = "~" if event["type"] == "rest" else str(int(event["midi"]))
+        token = "~" if event["type"] == "rest" else format_midi(float(event["midi"]))
         tokens.append(_weighted(token, event_end - event_start))
         cursor = event_end
     if cursor < end_tick:
@@ -49,3 +48,9 @@ def serialize_strudel(analysis: dict) -> str:
 def _weighted(token: str, weight: int) -> str:
     return token if weight == 1 else f"{token}@{weight}"
 
+
+def format_midi(value: float) -> str:
+    rounded = round(value, 3)
+    if rounded.is_integer():
+        return str(int(rounded))
+    return f"{rounded:.3f}".rstrip("0").rstrip(".")

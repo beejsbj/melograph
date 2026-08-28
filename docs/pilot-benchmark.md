@@ -14,15 +14,15 @@ FFmpeg decode, and artifact writes.
 
 | Mode | Warm wall median | CPU median | Peak RSS | Voicing | Octave-error candidates | Phrases |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Praat default | 0.590 s | 0.757 s | 120.9 MiB | 56.18% | 0 | 7 |
-| Praat + aubio agreement gate | 0.783 s | 0.948 s | 121.2 MiB | 42.13% | 0 | 7 |
+| Praat default | 0.705 s | 0.879 s | 120.6 MiB | 56.18% | 0 raw / 0 repaired | 7 |
+| Praat + aubio agreement gate | 0.770 s | 0.945 s | 121.4 MiB | 42.13% | 0 raw / 0 repaired | 7 |
 
 Where both trackers were voiced, their median disagreement was 30.4 cents;
 320 of 1,468 comparable frames exceeded the 80-cent agreement gate.
 
 ## Verdict
 
-Praat remains the product default. Fusion costs about 33% more wall time and
+Praat remains the product default. Fusion costs about 9% more wall time and
 drops roughly a quarter of the default's voiced frames. No human preference has
 yet been recorded for the fused result, so it remains an optional benchmark
 extra rather than a capture mode. That is the honest boundary: the measurements
@@ -31,4 +31,3 @@ remaining contour is musically better.
 
 The default reproduced seven separate phrases and reported no octave-error
 candidates. It does not combine or vote across the seven takes.
-

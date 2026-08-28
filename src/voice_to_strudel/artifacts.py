@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 
 from .audio import read_wav, write_wav
+from .editing import normalize_analysis
 from .model import PitchTrack, midi_to_hz
 from .strudel import serialize_strudel
 
@@ -38,6 +39,11 @@ def write_capture(
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     write_contour_csv(output_dir / "contour.csv", track, frame_data)
+    contour_audio = synthesize_contour(
+        frame_data["midi_processed"], track.times, analysis["source"]["duration_seconds"],
+        analysis["source"]["sample_rate"],
+    )
+    write_wav(output_dir / "contour-synth.wav", contour_audio, analysis["source"]["sample_rate"])
     (output_dir / "analysis.json").write_text(json.dumps(analysis, indent=2) + "\n")
     render_edited(output_dir / "analysis.json")
 
@@ -65,15 +71,18 @@ def write_contour_csv(path: Path, track: PitchTrack, frame_data: dict[str, np.nd
 
 
 def render_edited(analysis_path: Path) -> None:
-    analysis = json.loads(analysis_path.read_text())
+    analysis = normalize_analysis(json.loads(analysis_path.read_text()))
+    analysis_path.write_text(json.dumps(analysis, indent=2) + "\n")
     output_dir = analysis_path.parent
     source_path = output_dir / analysis["source"]["normalized_file"]
     audio = read_wav(source_path)
     candidate = synthesize_events(analysis, len(audio.samples), audio.sample_rate)
+    contour_path = output_dir / "contour-synth.wav"
+    contour = read_wav(contour_path).samples if contour_path.is_file() else None
     write_wav(output_dir / "synth.wav", candidate, audio.sample_rate)
     write_events_csv(output_dir / "events.csv", analysis)
     (output_dir / "strudel.js").write_text(serialize_strudel(analysis))
-    write_audition(output_dir, analysis, audio.samples, candidate, audio.sample_rate)
+    write_audition(output_dir, analysis, audio.samples, candidate, contour, audio.sample_rate)
 
 
 def synthesize_events(analysis: dict, sample_count: int, sample_rate: int) -> np.ndarray:
@@ -100,6 +109,25 @@ def synthesize_events(analysis: dict, sample_count: int, sample_rate: int) -> np
             samples[start:end] += tone
             phase = float(phases[-1] + 2.0 * np.pi * frequency / sample_rate)
     return np.clip(samples, -1.0, 1.0)
+
+
+def synthesize_contour(midi: np.ndarray, times: np.ndarray, duration: float, sample_rate: int) -> np.ndarray:
+    sample_count = round(duration * sample_rate)
+    samples = np.zeros(sample_count, dtype=float)
+    if len(times) < 2:
+        return samples
+    hop = max(1, round(float(np.median(np.diff(times))) * sample_rate))
+    phase = 0.0
+    for index, pitch in enumerate(midi):
+        start = round(float(times[index]) * sample_rate)
+        end = min(sample_count, start + hop)
+        if end <= start or not np.isfinite(pitch):
+            continue
+        frequency = midi_to_hz(float(pitch))
+        phases = phase + 2.0 * np.pi * frequency * np.arange(end - start) / sample_rate
+        samples[start:end] = 0.28 * np.sin(phases)
+        phase = float(phases[-1] + 2.0 * np.pi * frequency / sample_rate)
+    return samples
 
 
 def write_events_csv(path: Path, analysis: dict) -> None:
@@ -132,6 +160,7 @@ def write_audition(
     analysis: dict,
     source: np.ndarray,
     candidate: np.ndarray,
+    contour: np.ndarray | None,
     sample_rate: int,
 ) -> None:
     audition_dir = output_dir / "audition"
@@ -143,14 +172,18 @@ def write_audition(
         end = min(len(source), round(float(phrase["end_seconds"]) * sample_rate))
         source_name = f"source-{number:02d}.wav"
         synth_name = f"synth-{number:02d}.wav"
+        contour_name = f"contour-{number:02d}.wav"
         write_wav(audition_dir / source_name, source[start:end], sample_rate)
         write_wav(audition_dir / synth_name, candidate[start:end], sample_rate)
+        if contour is not None:
+            write_wav(audition_dir / contour_name, contour[start:end], sample_rate)
         note_list = " ".join(str(event["midi"]) for event in phrase["events"] if event["type"] == "note")
         cards.append(f"""
         <section>
           <h2>Take {number}</h2>
           <p><code>{html.escape(note_list)}</code> · {float(phrase['duration_seconds']):.2f}s</p>
           <label>Source<audio controls preload="metadata" src="audition/{source_name}"></audio></label>
+          {f'<label>Tracked contour<audio controls preload="metadata" src="audition/{contour_name}"></audio></label>' if contour is not None else ''}
           <label>Candidate<audio controls preload="metadata" src="audition/{synth_name}"></audio></label>
         </section>""")
     page = f"""<!doctype html>
@@ -173,4 +206,3 @@ def _number(value: float, decimals: int, *, zero_blank: bool = False) -> str:
     if not np.isfinite(value) or (zero_blank and value <= 0):
         return ""
     return f"{value:.{decimals}f}"
-
