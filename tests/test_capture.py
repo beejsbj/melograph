@@ -39,8 +39,20 @@ def test_benchmark_writes_a_human_audition_surface(tmp_path: Path) -> None:
     source = tmp_path / "tone.wav"
     write_wav(source, 0.3 * np.sin(2 * np.pi * 220 * times), sample_rate)
     report_path = tmp_path / "benchmark.json"
-    report = benchmark_file(source, report_path, runs=1)
-    assert report["human_preference"] == {"winner": None, "notes": None}
-    assert (tmp_path / "benchmark-audition" / "index.html").is_file()
-    assert list((tmp_path / "benchmark-audition").glob("praat-*.wav"))
-    assert list((tmp_path / "benchmark-audition").glob("fusion-*.wav"))
+    report = benchmark_file(
+        source,
+        report_path,
+        runs=1,
+        human_preference="tie",
+        preference_notes="Praat sounds as good as fusion.",
+    )
+    assert report["human_preference"] == {
+        "winner": "tie",
+        "notes": "Praat sounds as good as fusion.",
+    }
+    audition = tmp_path / "benchmark-audition"
+    assert (audition / "index.html").is_file()
+    assert (audition / "strudel.js").is_file()
+    assert 'href="strudel.js"' in (audition / "index.html").read_text()
+    assert list(audition.glob("praat-*.wav"))
+    assert list(audition.glob("fusion-*.wav"))

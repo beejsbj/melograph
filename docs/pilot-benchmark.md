@@ -20,16 +20,15 @@ FFmpeg decode, and artifact writes.
 Where both trackers were voiced, their median disagreement was 30.4 cents;
 320 of 1,468 comparable frames exceeded the 80-cent agreement gate.
 The command also writes `out/benchmark-audition/index.html`, with source, Praat,
-and agreement-fusion players for each of the seven takes.
+and agreement-fusion players for each of the seven takes, plus a direct link to
+the Praat-derived `strudel.js`.
 
 ## Verdict
 
-Praat remains the product default. Fusion costs about 29% more wall time and
-drops roughly a quarter of the default's voiced frames. No human preference has
-yet been recorded for the fused result, so it remains an optional benchmark
-extra rather than a capture mode. That is the honest boundary: the measurements
-can reject a cost-free-fusion story, but only listening can decide whether the
-remaining contour is musically better.
+Praat remains the product default. On 2026-08-28, Burooj judged Praat to sound as
+good as fusion. Fusion costs about 29% more wall time and drops roughly a quarter
+of the default's voiced frames, so the audible tie gives no reason to pay that
+cost. Fusion remains an optional benchmark extra rather than a capture mode.
 
 The default reproduced seven separate phrases and reported no octave-error
 candidates. It does not combine or vote across the seven takes.

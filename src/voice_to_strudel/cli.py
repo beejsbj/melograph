@@ -28,6 +28,8 @@ def parser() -> argparse.ArgumentParser:
     benchmark_parser.add_argument("input", type=Path)
     benchmark_parser.add_argument("--out", type=Path, required=True)
     benchmark_parser.add_argument("--runs", type=int, default=3)
+    benchmark_parser.add_argument("--preference", choices=("praat", "fusion", "tie"))
+    benchmark_parser.add_argument("--preference-notes")
 
     worker = commands.add_parser("_bench-worker", help=argparse.SUPPRESS)
     worker.add_argument("wav", type=Path)
@@ -51,7 +53,13 @@ def main(argv: list[str] | None = None) -> int:
             render_edited(arguments.analysis.resolve())
             print(f"rendered {arguments.analysis.parent}")
         elif arguments.command == "benchmark":
-            report = benchmark_file(arguments.input.resolve(), arguments.out.resolve(), arguments.runs)
+            report = benchmark_file(
+                arguments.input.resolve(),
+                arguments.out.resolve(),
+                arguments.runs,
+                human_preference=arguments.preference,
+                preference_notes=arguments.preference_notes,
+            )
             print(json.dumps(report, indent=2))
         elif arguments.command == "_bench-worker":
             print(json.dumps(benchmark_worker(arguments.wav, arguments.tracker, arguments.runs)))
@@ -63,4 +71,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -16,9 +16,16 @@ from .artifacts import synthesize_contour
 from .audio import normalize_audio, read_wav, write_wav
 from .pitch import agreement_fusion, track_aubio, track_praat
 from .segment import AnalysisConfig, analyze_events
+from .strudel import serialize_strudel
 
 
-def benchmark_file(source: Path, output: Path, runs: int = 3) -> dict:
+def benchmark_file(
+    source: Path,
+    output: Path,
+    runs: int = 3,
+    human_preference: str | None = None,
+    preference_notes: str | None = None,
+) -> dict:
     audition_relative: str | None = None
     with tempfile.TemporaryDirectory(prefix="voice-to-strudel-") as temp:
         wav = Path(temp) / "source.wav"
@@ -43,8 +50,12 @@ def benchmark_file(source: Path, output: Path, runs: int = 3) -> dict:
         "input": str(source),
         "modes": results,
         "audition_html": audition_relative,
-        "human_preference": {"winner": None, "notes": None},
-        "decision": "Fusion remains experimental until a listener records a preference that justifies its cost.",
+        "human_preference": {"winner": human_preference, "notes": preference_notes},
+        "decision": (
+            "Praat remains the default: fusion has no audible advantage and adds processing cost."
+            if human_preference == "tie"
+            else "Fusion remains experimental until a listener records a preference that justifies its cost."
+        ),
     }
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2) + "\n")
@@ -61,6 +72,7 @@ def write_benchmark_audition(wav: Path, output_dir: Path) -> None:
     primary_audio = synthesize_contour(primary_frames["midi_processed"], primary.times, audio.duration, audio.sample_rate)
     fusion_audio = synthesize_contour(fusion_frames["midi_processed"], fused.times, audio.duration, audio.sample_rate)
     output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "strudel.js").write_text(serialize_strudel(primary_analysis))
     cards: list[str] = []
     for phrase in primary_analysis["phrases"]:
         number = int(phrase["number"])
@@ -87,6 +99,7 @@ section{{border:1px solid #444;border-radius:12px;padding:1rem;margin:1rem 0;bac
 label{{display:grid;grid-template-columns:10rem 1fr;align-items:center;margin:.7rem 0}} audio{{width:100%}}
 </style></head><body><h1>Praat vs agreement fusion</h1>
 <p>Listen to the source first. Record a winner and notes in the benchmark JSON; silence in fusion means the trackers disagreed.</p>
+<p><a href="strudel.js">View or download the generated Praat Strudel code</a></p>
 {''.join(cards)}</body></html>"""
     (output_dir / "index.html").write_text(page)
 
