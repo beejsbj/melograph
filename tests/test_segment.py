@@ -64,6 +64,28 @@ def test_stepwise_ascent_is_not_collapsed_into_a_slide() -> None:
     assert stable_pitch_boundaries(staircase, times, 0.10) == [15, 30]
 
 
+def test_settle_glide_settle_is_one_slide_gesture() -> None:
+    times = np.arange(100) * 0.01
+    portamento = np.concatenate([
+        np.full(35, 60.0),
+        np.linspace(60.0, 64.0, 30),
+        np.full(35, 64.0),
+    ])
+    gesture = classify_gesture(portamento, times)
+    assert gesture and gesture["type"] == "slide"
+    assert stable_pitch_boundaries(portamento, times, 0.10) == []
+
+
+def test_two_separate_glides_remain_a_stepwise_melody() -> None:
+    times = np.arange(100) * 0.01
+    melody = np.concatenate([
+        np.full(20, 60.0), np.linspace(60.0, 62.0, 15), np.full(30, 62.0),
+        np.linspace(62.0, 64.0, 15), np.full(20, 64.0),
+    ])
+    assert classify_gesture(melody, times) is None
+    assert stable_pitch_boundaries(melody, times, 0.10)
+
+
 def test_real_amplitude_valley_produces_one_reattack() -> None:
     sample_rate = 10_000
     sample_times = np.arange(sample_rate) / sample_rate

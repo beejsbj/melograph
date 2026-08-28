@@ -243,12 +243,25 @@ def is_continuous_slide(midi: np.ndarray) -> bool:
     smoothed = median_smooth(np.asarray(midi, dtype=float), 5)
     differences = np.diff(smoothed)
     moving = np.abs(differences) >= 0.01
-    if float(np.mean(moving)) < 0.65:
+    moving_indices = np.flatnonzero(moving)
+    if len(moving_indices) < 4:
         return False
-    direction = np.sign(float(np.median(differences[moving])))
+    groups: list[list[int]] = []
+    for index_value in moving_indices:
+        index = int(index_value)
+        if groups and index - groups[-1][-1] <= 2:
+            groups[-1].append(index)
+        else:
+            groups.append([index])
+    substantial_groups = [group for group in groups if len(group) >= max(4, round(len(midi) * 0.08))]
+    if len(substantial_groups) != 1:
+        return False
+    transition = substantial_groups[0]
+    transition_differences = differences[transition]
+    direction = np.sign(float(np.median(transition_differences)))
     if direction == 0:
         return False
-    consistent = float(np.mean(np.sign(differences[moving]) == direction))
+    consistent = float(np.mean(np.sign(transition_differences) == direction))
     span = float(np.percentile(smoothed, 90) - np.percentile(smoothed, 10))
     return span >= 1.5 and consistent >= 0.85
 
