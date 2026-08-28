@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import base64
+from urllib.parse import unquote
+
 from voice_to_strudel.editing import EditError, normalize_analysis
-from voice_to_strudel.strudel import phrase_pattern, serialize_strudel
+from voice_to_strudel.strudel import phrase_pattern, serialize_strudel, strudel_repl_url
 
 
 def phrase() -> dict:
@@ -29,6 +32,13 @@ def test_serialization_is_stable_and_keeps_repeated_attacks() -> None:
 
 def test_empty_capture_is_runnable_silence() -> None:
     assert serialize_strudel({"phrases": []}).endswith("silence\n")
+
+
+def test_repl_url_embeds_one_runnable_take_as_base64() -> None:
+    url = strudel_repl_url(phrase())
+    encoded = unquote(url.removeprefix("https://strudel.cc/#"))
+    code = base64.b64decode(encoded).decode()
+    assert code == 'setcpm(60)\nnote("60@20 60@20 ~@10 63@10").slow(0.60)\n'
 
 
 def test_decimal_midi_is_serialized_without_truncation() -> None:

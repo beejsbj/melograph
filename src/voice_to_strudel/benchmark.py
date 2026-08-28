@@ -16,7 +16,7 @@ from .artifacts import synthesize_contour
 from .audio import normalize_audio, read_wav, write_wav
 from .pitch import agreement_fusion, track_aubio, track_praat
 from .segment import AnalysisConfig, analyze_events
-from .strudel import serialize_strudel
+from .strudel import serialize_strudel, strudel_repl_url
 
 
 def benchmark_file(
@@ -90,7 +90,12 @@ def write_benchmark_audition(wav: Path, output_dir: Path) -> None:
             f'<label>{escape(label)}<audio controls preload="metadata" src="{escape(name)}"></audio></label>'
             for label, name in names.items()
         )
-        cards.append(f"<section><h2>Take {number}</h2>{players}</section>")
+        repl_url = strudel_repl_url(phrase)
+        cards.append(
+            f'<section><h2>Take {number}</h2>{players}'
+            f'<p><a href="{escape(repl_url, quote=True)}" target="_blank" rel="noopener">'
+            "Open this take in Strudel ↗</a></p></section>"
+        )
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
 <title>Voice to Strudel tracker audition</title><style>

@@ -54,5 +54,7 @@ def test_benchmark_writes_a_human_audition_surface(tmp_path: Path) -> None:
     assert (audition / "index.html").is_file()
     assert (audition / "strudel.js").is_file()
     assert 'href="strudel.js"' in (audition / "index.html").read_text()
+    assert "Open this take in Strudel" in (audition / "index.html").read_text()
+    assert "https://strudel.cc/#" in (audition / "index.html").read_text()
     assert list(audition.glob("praat-*.wav"))
     assert list(audition.glob("fusion-*.wav"))

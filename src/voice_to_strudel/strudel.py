@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 from decimal import ROUND_HALF_UP, Decimal
+from urllib.parse import quote
 
 TICKS_PER_SECOND = 100
 
@@ -43,6 +45,12 @@ def serialize_strudel(analysis: dict) -> str:
     else:
         lines.extend(["// No voiced phrases detected.", "silence"])
     return "\n".join(lines) + "\n"
+
+
+def strudel_repl_url(phrase: dict) -> str:
+    code = f"setcpm(60)\n{phrase_pattern(phrase)}\n"
+    encoded = base64.b64encode(code.encode()).decode()
+    return f"https://strudel.cc/#{quote(encoded, safe='')}"
 
 
 def _weighted(token: str, weight: int) -> str:
