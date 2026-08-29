@@ -9,6 +9,29 @@ The default tracker is Praat autocorrelation. It is CPU-first, runs locally, and
 keeps the source recording beside every derived artifact. Human listening is
 the acceptance test; confidence values are diagnostics, not truth.
 
+## Melograph web app
+
+The browser adapter is called **Melograph**: voice becomes a continuous contour,
+named note events, editable JSON-compatible data, and Strudel as the first-party
+code output. The CLI remains the durable engine and keeps the project useful for
+other outputs later.
+
+Run the React recording bench locally:
+
+```bash
+vercel dev
+```
+
+The page records up to 45 seconds from the browser microphone or accepts an audio
+file. Audio is decoded and normalized to mono 22,050 Hz PCM WAV in the browser,
+then sent to `/api/analyze`; it is not persisted by the function. The result shows
+the raw and repaired contours together, phrase-separated note names and timing,
+and one editable/open-in-Strudel code surface per take. `/styleguide` exposes the
+same imported design primitives and contour composition used by the app.
+
+The Vercel request ceiling is 4.5 MB. The 45-second browser limit keeps the PCM
+payload below 2 MB, leaving room for headers and the JSON response.
+
 ## Install
 
 Python 3.11+ and `ffmpeg` are required. `ffmpeg` decodes WAV/M4A and records from

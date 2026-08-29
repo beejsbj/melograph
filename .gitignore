@@ -7,4 +7,6 @@ dist/
 build/
 *.egg-info/
 out/
-
+web/node_modules/
+web/dist/
+.vercel/

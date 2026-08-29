@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "devCommand": "npm --prefix web run dev -- --port $PORT",
+  "buildCommand": "npm --prefix web ci && npm --prefix web run build",
+  "outputDirectory": "web/dist",
+  "functions": {
+    "api/analyze.py": {
+      "excludeFiles": "{tests/**,docs/**,out/**,web/node_modules/**,web/dist/**}"
+    }
+  },
+  "rewrites": [
+    { "source": "/styleguide", "destination": "/index.html" }
+  ]
+}
