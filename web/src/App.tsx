@@ -1,7 +1,6 @@
 import { Activity, AudioLines, Code2 } from 'lucide-react';
 import { useState } from 'react';
-import { Panel } from './components/Panel';
-import { Recorder } from './components/Recorder';
+import { CapturePanel, type CaptureStatus } from './components/CapturePanel';
 import { StatusChip } from './components/StatusChip';
 import { Workspace } from './components/Workspace';
 import { analyzeWav } from './lib/api';
@@ -11,7 +10,7 @@ import type { AnalysisResult } from './types';
 export function App() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [sourceLabel, setSourceLabel] = useState('');
-  const [status, setStatus] = useState<'idle' | 'preparing' | 'analyzing'>('idle');
+  const [status, setStatus] = useState<CaptureStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
   async function handleAudio(blob: Blob, label: string) {
@@ -37,6 +36,15 @@ export function App() {
         <Workspace result={result} sourceLabel={sourceLabel} onReset={() => setResult(null)} />
       ) : (
         <main className="landing page-shell">
+          <aside className="landing__capture" aria-label="Record or upload a melody">
+            <CapturePanel
+              status={status}
+              error={error}
+              onAudio={(blob, label) => void handleAudio(blob, label)}
+              onError={setError}
+            />
+          </aside>
+
           <section className="landing__story">
             <span className="eyebrow">voice → editable melody</span>
             <h1>sing it before<br />it disappears.</h1>
@@ -52,28 +60,6 @@ export function App() {
             </div>
           </section>
 
-          <aside className="landing__capture">
-            <Panel eyebrow="new capture" title="Give the idea some room">
-              <p className="capture-copy">Hum or sing one monophonic line. Leave a short silence between separate takes.</p>
-              <Recorder
-                disabled={status !== 'idle'}
-                onAudio={(blob, label) => void handleAudio(blob, label)}
-                onError={setError}
-              />
-              {status !== 'idle' && (
-                <div className="analysis-status" role="status">
-                  <span />
-                  <strong>{status === 'preparing' ? 'preparing clean audio' : 'drawing the melody'}</strong>
-                  <small>{status === 'analyzing' ? 'Praat is resolving contour and attacks' : 'resampling locally in your browser'}</small>
-                </div>
-              )}
-              {error && <p className="error-banner" role="alert">{error}</p>}
-              <div className="capture-note">
-                <span>note</span>
-                <p><strong>No generative AI.</strong> The default path is deterministic Praat pitch analysis. Listen and edit before treating the notes as truth.</p>
-              </div>
-            </Panel>
-          </aside>
         </main>
       )}
     </div>

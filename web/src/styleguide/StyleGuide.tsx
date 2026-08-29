@@ -1,5 +1,6 @@
 import { Mic, RotateCcw } from 'lucide-react';
 import { Button } from '../components/Button';
+import { CapturePanel } from '../components/CapturePanel';
 import { ContourChart } from '../components/ContourChart';
 import { Panel } from '../components/Panel';
 import { RecordButton } from '../components/RecordButton';
@@ -50,6 +51,12 @@ export function StyleGuide() {
           <StatusChip tone="ready">analysis ready</StatusChip>
           <RecordButton />
           <RecordButton recording />
+        </div>
+      </Panel>
+      <Panel eyebrow="mobile composition" title="Capture comes before context">
+        <div className="mobile-capture-specimen">
+          <CapturePanel status="idle" onAudio={() => undefined} />
+          <p>One recorder owns the microphone, upload, progress, and guidance states. On narrow screens it is the first action after navigation.</p>
         </div>
       </Panel>
       <Panel eyebrow="hero composition" title="Contour with interpreted events">
