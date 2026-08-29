@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+NOTE_NAMES = ("C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B")
+
 
 @dataclass(slots=True)
 class Audio:
@@ -39,3 +41,7 @@ def hz_to_midi(frequency: float) -> float:
 def midi_to_hz(midi: float) -> float:
     return 440.0 * 2.0 ** ((midi - 69.0) / 12.0)
 
+
+def midi_to_note_name(midi: float) -> str:
+    nearest = int(np.floor(float(midi) + 0.5))
+    return f"{NOTE_NAMES[nearest % 12]}{nearest // 12 - 1}"

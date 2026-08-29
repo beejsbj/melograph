@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import platform
 import shutil
 import subprocess
@@ -68,10 +69,22 @@ def capture_microphone(destination: Path, seconds: float, sample_rate: int = SAM
 
 def read_wav(path: Path) -> Audio:
     with wave.open(str(path), "rb") as handle:
-        channels = handle.getnchannels()
-        width = handle.getsampwidth()
-        sample_rate = handle.getframerate()
-        frames = handle.readframes(handle.getnframes())
+        return _read_wav_handle(handle)
+
+
+def read_wav_bytes(payload: bytes) -> Audio:
+    try:
+        with wave.open(io.BytesIO(payload), "rb") as handle:
+            return _read_wav_handle(handle)
+    except (EOFError, wave.Error) as error:
+        raise AudioError(f"invalid WAV payload: {error}") from error
+
+
+def _read_wav_handle(handle: wave.Wave_read) -> Audio:
+    channels = handle.getnchannels()
+    width = handle.getsampwidth()
+    sample_rate = handle.getframerate()
+    frames = handle.readframes(handle.getnframes())
     if channels != 1 or width != 2:
         raise AudioError(f"expected mono 16-bit PCM WAV, got {channels} channels and {width * 8}-bit")
     samples = np.frombuffer(frames, dtype="<i2").astype(np.float64) / 32768.0
