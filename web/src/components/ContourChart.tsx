@@ -11,21 +11,26 @@ const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 
 interface Props {
   result: Pick<AnalysisResult, 'frames' | 'phrases' | 'duration_seconds'>;
   playheadSeconds?: number;
+  rangeStart?: number;
+  rangeEnd?: number;
 }
 
-export function ContourChart({ result, playheadSeconds }: Props) {
-  const pitches = result.frames.flatMap((frame) => [frame.midi_raw, frame.midi_processed]).filter(isNumber);
+export function ContourChart({ result, playheadSeconds, rangeStart = 0, rangeEnd = result.duration_seconds }: Props) {
+  const duration = Math.max(.01, rangeEnd - rangeStart);
+  const frames = result.frames.filter((frame) => frame.time_seconds >= rangeStart && frame.time_seconds <= rangeEnd);
+  const pitches = frames.flatMap((frame) => [frame.midi_raw, frame.midi_processed]).filter(isNumber);
   const lowest = pitches.length ? Math.floor(Math.min(...pitches)) - 1 : 47;
   const highest = pitches.length ? Math.ceil(Math.max(...pitches)) + 1 : 59;
   const span = Math.max(8, highest - lowest);
   const top = lowest + span;
-  const x = (time: number) => LEFT + time / result.duration_seconds * (WIDTH - LEFT - RIGHT);
+  const x = (time: number) => LEFT + (time - rangeStart) / duration * (WIDTH - LEFT - RIGHT);
   const y = (midi: number) => TOP + (top - midi) / span * (HEIGHT - TOP - BOTTOM);
-  const raw = pathSegments(result.frames, 'midi_raw', x, y);
-  const repaired = pathSegments(result.frames, 'midi_processed', x, y);
+  const raw = pathSegments(frames, 'midi_raw', x, y);
+  const repaired = pathSegments(frames, 'midi_processed', x, y);
 
   return (
     <div className="chart" role="img" aria-label="Raw pitch contour and interpreted note events over time">
+      <span className="chart__mobile-hint" aria-hidden="true">swipe to inspect →</span>
       <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} preserveAspectRatio="none">
         <defs>
           <linearGradient id="note-fill" x1="0" x2="1">
@@ -39,10 +44,10 @@ export function ContourChart({ result, playheadSeconds }: Props) {
             <text className="chart__label" x={LEFT - 9} y={y(midi) + 4}>{noteName(midi)}</text>
           </g>
         ))}
-        {timeTicks(result.duration_seconds).map((time) => (
+        {timeTicks(duration).map((time) => (
           <g key={time}>
-            <line className="chart__tick" x1={x(time)} x2={x(time)} y1={TOP} y2={HEIGHT - BOTTOM} />
-            <text className="chart__time" x={x(time)} y={HEIGHT - 10}>{time.toFixed(time < 10 ? 1 : 0)}s</text>
+            <line className="chart__tick" x1={x(rangeStart + time)} x2={x(rangeStart + time)} y1={TOP} y2={HEIGHT - BOTTOM} />
+            <text className="chart__time" x={x(rangeStart + time)} y={HEIGHT - 10}>{time.toFixed(time < 10 ? 1 : 0)}s</text>
           </g>
         ))}
         <NoteBlocks phrases={result.phrases} x={x} y={y} />
@@ -51,8 +56,8 @@ export function ContourChart({ result, playheadSeconds }: Props) {
         {playheadSeconds !== undefined && (
           <line
             className="chart__playhead"
-            x1={x(Math.max(0, Math.min(result.duration_seconds, playheadSeconds)))}
-            x2={x(Math.max(0, Math.min(result.duration_seconds, playheadSeconds)))}
+            x1={x(Math.max(rangeStart, Math.min(rangeEnd, playheadSeconds)))}
+            x2={x(Math.max(rangeStart, Math.min(rangeEnd, playheadSeconds)))}
             y1={TOP}
             y2={HEIGHT - BOTTOM}
           />

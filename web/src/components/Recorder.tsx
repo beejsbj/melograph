@@ -5,13 +5,17 @@ import { RecordButton } from './RecordButton';
 
 const MAX_SECONDS = 45;
 
+export type CaptureStatus = 'idle' | 'preparing' | 'analyzing';
+
 interface Props {
   disabled?: boolean;
+  compact?: boolean;
+  busyLabel?: string;
   onAudio: (blob: Blob, label: string) => void;
   onError?: (message: string) => void;
 }
 
-export function Recorder({ disabled, onAudio, onError }: Props) {
+export function Recorder({ disabled, compact = false, busyLabel, onAudio, onError }: Props) {
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const recorder = useRef<MediaRecorder | null>(null);
@@ -70,19 +74,19 @@ export function Recorder({ disabled, onAudio, onError }: Props) {
   }
 
   return (
-    <div className="recorder">
+    <div className={`recorder${compact ? ' recorder--notch' : ''}`}>
       <RecordButton
         recording={recording}
         onClick={() => (recording ? stop() : void start())}
         disabled={disabled}
       />
       <div className="recorder__readout">
-        <strong>{recording ? 'listening' : 'ready when the idea is'}</strong>
-        <span>{recording ? `${elapsed.toFixed(1)} / ${MAX_SECONDS}s` : 'tap once, hum, tap again'}</span>
+        <strong>{recording ? 'listening' : busyLabel ?? 'ready when the idea is'}</strong>
+        <span>{recording ? `${elapsed.toFixed(1)} / ${MAX_SECONDS}s` : busyLabel ? 'hold on to the phrase' : 'tap once, hum, tap again'}</span>
       </div>
       <div className="recorder__rule"><span style={{ width: `${Math.min(100, elapsed / MAX_SECONDS * 100)}%` }} /></div>
-      <Button type="button" icon={<Upload size={14} />} disabled={disabled || recording} onClick={() => fileInput.current?.click()}>
-        use an audio file
+      <Button className="recorder__file" type="button" icon={<Upload size={14} />} disabled={disabled || recording} onClick={() => fileInput.current?.click()} aria-label="Use an audio file">
+        {compact ? 'file' : 'use an audio file'}
       </Button>
       <input
         ref={fileInput}

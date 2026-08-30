@@ -43,6 +43,7 @@ export interface AnalysisResult {
   frames: Frame[];
   phrases: Phrase[];
   strudel: string;
+  strudel_midi: string;
   takes: Take[];
   warnings: string[];
 }

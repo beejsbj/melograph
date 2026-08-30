@@ -6,7 +6,12 @@ from .audio import read_wav_bytes
 from .model import midi_to_note_name
 from .pitch import track_pitch
 from .segment import AnalysisConfig, analyze_events
-from .strudel import phrase_pattern, serialize_strudel, strudel_repl_url
+from .strudel import (
+    phrase_pattern,
+    playable_phrases,
+    serialize_strudel,
+    strudel_repl_url,
+)
 
 MAX_WEB_AUDIO_SECONDS = 45.0
 
@@ -20,7 +25,7 @@ def analyze_wav_payload(payload: bytes, *, tracker: str = "praat") -> dict:
 
     track = track_pitch(audio, tracker=tracker)
     analysis, frames = analyze_events(audio, track, AnalysisConfig())
-    phrases = analysis["phrases"]
+    phrases = playable_phrases(analysis["phrases"])
     for phrase in phrases:
         for event in phrase["events"]:
             if event["type"] == "note":
@@ -45,6 +50,7 @@ def analyze_wav_payload(payload: bytes, *, tracker: str = "praat") -> dict:
         ],
         "phrases": phrases,
         "strudel": serialize_strudel(analysis),
+        "strudel_midi": serialize_strudel(analysis, pitch_format="midi"),
         "takes": [
             {
                 "number": int(phrase["number"]),

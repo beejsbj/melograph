@@ -1,9 +1,10 @@
-import { Mic, RotateCcw } from 'lucide-react';
+import { Mic } from 'lucide-react';
 import { Button } from '../components/Button';
-import { CapturePanel } from '../components/CapturePanel';
+import { CaptureNotch } from '../components/CaptureNotch';
 import { ContourChart } from '../components/ContourChart';
 import { Panel } from '../components/Panel';
 import { RecordButton } from '../components/RecordButton';
+import { ScopeSelector } from '../components/ScopeSelector';
 import { StatusChip } from '../components/StatusChip';
 import type { AnalysisResult } from '../types';
 
@@ -45,7 +46,6 @@ export function StyleGuide() {
       <Panel eyebrow="primitives" title="Controls and state">
         <div className="specimen-row">
           <Button tone="brass" icon={<Mic size={14} />}>record</Button>
-          <Button icon={<RotateCcw size={14} />}>new capture</Button>
           <Button disabled>disabled</Button>
           <StatusChip tone="live">listening</StatusChip>
           <StatusChip tone="ready">analysis ready</StatusChip>
@@ -53,11 +53,14 @@ export function StyleGuide() {
           <RecordButton recording />
         </div>
       </Panel>
-      <Panel eyebrow="mobile composition" title="Capture comes before context">
-        <div className="mobile-capture-specimen">
-          <CapturePanel status="idle" onAudio={() => undefined} />
-          <p>One recorder owns the microphone, upload, progress, and guidance states. On narrow screens it is the first action after navigation.</p>
+      <Panel eyebrow="persistent compound" title="The capture notch never leaves">
+        <div className="notch-specimen">
+          <CaptureNotch status="idle" onAudio={() => undefined} />
+          <p>One recorder owns microphone and file capture across the hero, loading veil, and completed analysis.</p>
         </div>
+      </Panel>
+      <Panel eyebrow="scope primitive" title="One selection drives every analysis surface">
+        <div className="specimen-row"><ScopeSelector phrases={specimen.phrases} value="full" onChange={() => undefined} /></div>
       </Panel>
       <Panel eyebrow="hero composition" title="Contour with interpreted events">
         <ContourChart result={specimen} />

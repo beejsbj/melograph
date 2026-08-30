@@ -36,6 +36,7 @@ def test_web_analysis_returns_contour_names_and_runnable_take() -> None:
     assert "A3@" in result["takes"][0]["code"]
     assert '.as("note")' in result["takes"][0]["code"]
     assert "57@" in result["takes"][0]["code_midi"]
+    assert "57@" in result["strudel_midi"]
     encoded = unquote(result["takes"][0]["repl_url"].split("#", 1)[1])
     assert base64.b64decode(encoded).decode() == result["takes"][0]["code"]
 

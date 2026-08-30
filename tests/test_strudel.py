@@ -34,6 +34,20 @@ def test_empty_capture_is_runnable_silence() -> None:
     assert serialize_strudel({"phrases": []}).endswith("silence\n")
 
 
+def test_full_output_names_only_multiple_playable_takes() -> None:
+    second = phrase()
+    second["number"] = 2
+    empty = {**phrase(), "number": 3, "events": []}
+
+    single = serialize_strudel({"phrases": [phrase(), empty]})
+    full = serialize_strudel({"phrases": [phrase(), second, empty]})
+
+    assert "$TAKE_" not in single
+    assert "$TAKE_1:" in full
+    assert "$TAKE_2:" in full
+    assert "$TAKE_3:" not in full
+
+
 def test_repl_url_embeds_one_runnable_take_as_base64() -> None:
     url = strudel_repl_url(phrase())
     encoded = unquote(url.removeprefix("https://strudel.cc/#"))

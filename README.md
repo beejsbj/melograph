@@ -31,13 +31,19 @@ vercel dev
 
 The page records up to 45 seconds from the browser microphone or accepts an audio
 file. Audio is decoded and normalized to mono 22,050 Hz PCM WAV in the browser,
-then sent to `/api/analyze`; it is not persisted by the function. The result shows
-the raw and repaired contours together, phrase-separated note names and timing,
-and one editable/open-in-Strudel code surface per take. Note names are the default,
-with precise MIDI values available as a toggle. A synchronized audition transport
-lets you compare the analyzed source, repaired contour, interpreted note events,
-and live Strudel output without uploading another artifact. `/styleguide` exposes
-the same imported design primitives and contour composition used by the app.
+then sent to `/api/analyze`; it is not persisted by the function. The microphone
+remains available in the top notch while the hero, analysis veil, and completed
+workspace occupy one continuous surface.
+
+The result shows the raw and repaired contours together, phrase-separated note
+names and timing, and editable Strudel output. A sustained silence (about 0.65
+seconds by default) begins another take. One shared Full/Take selector changes the
+event ledger, graph, playback range, and code together. Full output receives
+`$TAKE_n` labels only when the recording contains multiple note-bearing takes;
+an individual take remains a bare pattern. Note names are the default, with precise
+MIDI values available as a toggle. Selecting Strudel docks the editor beside the
+graph on wide screens and reveals the live player in the shared audition transport.
+`/styleguide` exposes the same imported primitives and composition used by the app.
 
 The API rejects request bodies over 4 MB. The 45-second browser limit keeps mono
 22,050 Hz 16-bit PCM below 2 MB, comfortably under that limit.

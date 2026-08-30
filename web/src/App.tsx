@@ -1,6 +1,8 @@
 import { Activity, AudioLines, Code2 } from 'lucide-react';
 import { useState } from 'react';
-import { CapturePanel, type CaptureStatus } from './components/CapturePanel';
+import { AnalysisOverlay } from './components/AnalysisOverlay';
+import { CaptureNotch } from './components/CaptureNotch';
+import type { CaptureStatus } from './components/Recorder';
 import { StatusChip } from './components/StatusChip';
 import { Workspace } from './components/Workspace';
 import { analyzeWav } from './lib/api';
@@ -13,6 +15,7 @@ export function App() {
   const [sourceLabel, setSourceLabel] = useState('');
   const [status, setStatus] = useState<CaptureStatus>('idle');
   const [error, setError] = useState<string | null>(null);
+  const [captureVersion, setCaptureVersion] = useState(0);
 
   async function handleAudio(blob: Blob, label: string) {
     setError(null);
@@ -24,6 +27,7 @@ export function App() {
       setSourceLabel(label);
       setSourceAudio(wav);
       setResult(next);
+      setCaptureVersion((value) => value + 1);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not analyze this recording.');
     } finally {
@@ -33,53 +37,61 @@ export function App() {
 
   return (
     <div className="app">
-      <SiteHeader />
-      {result && sourceAudio ? (
-        <Workspace
-          result={result}
-          sourceAudio={sourceAudio}
-          sourceLabel={sourceLabel}
-          onReset={() => {
-            setResult(null);
-            setSourceAudio(null);
-          }}
-        />
-      ) : (
-        <main className="landing page-shell">
-          <aside className="landing__capture" aria-label="Record or upload a melody">
-            <CapturePanel
-              status={status}
-              error={error}
-              onAudio={(blob, label) => void handleAudio(blob, label)}
-              onError={setError}
-            />
-          </aside>
-
-          <section className="landing__story">
-            <span className="eyebrow">voice → editable melody</span>
-            <h1>sing it before<br />it disappears.</h1>
-            <p className="landing__lede">
-              Melograph catches a hummed idea as a continuous pitch line, interprets the note events,
-              then gives you code you can keep shaping.
-            </p>
-            <TraceSpecimen />
-            <div className="process-list">
-              <Process icon={<AudioLines />} number="01" title="voice" body="record or bring an audio sketch" />
-              <Process icon={<Activity />} number="02" title="shape" body="inspect contour, notes, and timing" />
-              <Process icon={<Code2 />} number="03" title="output" body="start in Strudel; keep the raw data" />
-            </div>
-          </section>
-
-        </main>
-      )}
+      <SiteHeader
+        capture={(
+          <CaptureNotch
+            status={status}
+            error={error}
+            onAudio={(blob, label) => void handleAudio(blob, label)}
+            onError={setError}
+          />
+        )}
+      />
+      <div className="app-stage">
+        {result && sourceAudio ? (
+          <Workspace
+            key={captureVersion}
+            result={result}
+            sourceAudio={sourceAudio}
+            sourceLabel={sourceLabel}
+          />
+        ) : (
+          <Hero />
+        )}
+        {error && <p className="app-stage__error error-banner" role="alert">{error}</p>}
+        {status !== 'idle' && <AnalysisOverlay status={status} />}
+      </div>
     </div>
   );
 }
 
-function SiteHeader() {
+function Hero() {
+  return (
+    <main className="hero page-shell">
+      <section className="hero__story">
+        <span className="eyebrow">voice → editable melody</span>
+        <h1>sing it before<br />it disappears.</h1>
+        <p className="hero__lede">
+          Melograph catches a hummed idea as a continuous pitch line, interprets the note events,
+          then gives you code you can keep shaping.
+        </p>
+        <TraceSpecimen />
+        <div className="process-list">
+          <Process icon={<AudioLines />} number="01" title="voice" body="record or bring an audio sketch" />
+          <Process icon={<Activity />} number="02" title="shape" body="inspect contour, notes, and timing" />
+          <Process icon={<Code2 />} number="03" title="output" body="start in Strudel; keep the raw data" />
+        </div>
+        <p className="hero__note"><strong>No generative AI.</strong> Deterministic pitch analysis gives you evidence to hear, inspect, and edit.</p>
+      </section>
+    </main>
+  );
+}
+
+function SiteHeader({ capture }: { capture: React.ReactNode }) {
   return (
     <header className="site-header page-shell">
       <a className="wordmark" href="/">melograph<span>///</span></a>
+      {capture}
       <div className="site-header__meta">
         <StatusChip tone="live">praat / cpu-first</StatusChip>
         <a href="https://strudel.cc" target="_blank" rel="noreferrer">strudel.cc ↗</a>

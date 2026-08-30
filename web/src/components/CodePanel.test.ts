@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Take } from '../types';
-import { encodeStrudelUrl, takeCode } from './CodePanel';
+import { encodeStrudelUrl, outputCode } from './CodePanel';
 
 describe('encodeStrudelUrl', () => {
   it('round-trips unicode-safe Strudel code in the URL fragment', () => {
@@ -12,16 +11,9 @@ describe('encodeStrudelUrl', () => {
   });
 });
 
-describe('takeCode', () => {
-  const take: Take = {
-    number: 1,
-    code: 'note("C4")',
-    code_midi: 'note("60")',
-    repl_url: 'https://strudel.cc',
-  };
-
+describe('outputCode', () => {
   it('defaults to readable note names while exposing the precise MIDI form', () => {
-    expect(takeCode(take, 'notes')).toBe('note("C4")');
-    expect(takeCode(take, 'midi')).toBe('note("60")');
+    expect(outputCode('note("C4")', 'note("60")', 'notes')).toBe('note("C4")');
+    expect(outputCode('note("C4")', 'note("60")', 'midi')).toBe('note("60")');
   });
 });

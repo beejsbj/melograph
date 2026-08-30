@@ -1,27 +1,25 @@
 import { Check, Copy, ExternalLink } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import type { Take } from '../types';
 import { Button } from './Button';
 
 export type PitchOutput = 'notes' | 'midi';
 
 interface Props {
-  takes: Take[];
+  scopeKey: string;
+  scopeLabel: string;
+  noteCode: string;
+  midiCode: string;
   onActiveCodeChange?: (code: string) => void;
 }
 
-export function CodePanel({ takes, onActiveCodeChange }: Props) {
-  const [active, setActive] = useState(0);
+export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCodeChange }: Props) {
   const [pitchOutput, setPitchOutput] = useState<PitchOutput>('notes');
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
-  const selected = takes[active];
-  const editKey = selected ? `${selected.number}:${pitchOutput}` : '';
-  const code = selected ? edits[editKey] ?? takeCode(selected, pitchOutput) : '';
+  const editKey = `${scopeKey}:${pitchOutput}`;
+  const code = edits[editKey] ?? outputCode(noteCode, midiCode, pitchOutput);
   useEffect(() => onActiveCodeChange?.(code), [code, onActiveCodeChange]);
   const replUrl = useMemo(() => encodeStrudelUrl(code), [code]);
-
-  if (!selected) return <p className="empty-copy">No voiced take was found. Try a clearer, steadier recording.</p>;
 
   async function copy() {
     await navigator.clipboard.writeText(code);
@@ -32,20 +30,7 @@ export function CodePanel({ takes, onActiveCodeChange }: Props) {
   return (
     <div className="code-panel">
       <div className="code-panel__toolbar">
-        <div className="take-tabs" role="tablist" aria-label="Strudel takes">
-          {takes.map((take, index) => (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={active === index}
-              className={active === index ? 'take-tab take-tab--active' : 'take-tab'}
-              onClick={() => setActive(index)}
-              key={take.number}
-            >
-              {String(take.number).padStart(2, '0')}
-            </button>
-          ))}
-        </div>
+        <span className="code-panel__scope">{scopeLabel}</span>
         <div className="pitch-output" role="group" aria-label="Pitch output">
           {(['notes', 'midi'] as PitchOutput[]).map((output) => (
             <button
@@ -76,8 +61,8 @@ export function CodePanel({ takes, onActiveCodeChange }: Props) {
   );
 }
 
-export function takeCode(take: Take, output: PitchOutput) {
-  return output === 'midi' ? take.code_midi : take.code;
+export function outputCode(noteCode: string, midiCode: string, output: PitchOutput) {
+  return output === 'midi' ? midiCode : noteCode;
 }
 
 export function encodeStrudelUrl(code: string) {
