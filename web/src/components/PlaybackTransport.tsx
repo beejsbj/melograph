@@ -198,7 +198,7 @@ export function PlaybackTransport({ result, sourceAudio, onTimeChange }: Props) 
 
   return (
     <section className="audition" aria-label="Analysis playback">
-      <audio ref={audioRef} src={sourceUrl} preload="auto" onEnded={finish} />
+      <audio ref={audioRef} src={sourceUrl || undefined} preload="auto" onEnded={finish} />
       <div className="audition__intro">
         <div>
           <span className="eyebrow">a / b audition</span>
