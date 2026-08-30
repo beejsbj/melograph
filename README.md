@@ -42,33 +42,61 @@ payload below 2 MB, leaving room for headers and the JSON response.
 
 ## Install
 
-Python 3.11+ and `ffmpeg` are required. `ffmpeg` decodes WAV/M4A and records from
-the microphone without adding an audio framework to the Python process.
+Python 3.11+, [uv](https://docs.astral.sh/uv/), and `ffmpeg` are required.
+`ffmpeg` decodes WAV/M4A and records from the microphone without adding an audio
+framework to the Python process.
+
+Install the current GitHub version as a persistent `melograph` command:
 
 ```bash
-cd /path/to/voice-to-strudel
+uv tool install git+https://github.com/beejsbj/melograph
+melograph --help
+```
+
+Upgrade it later with `uv tool upgrade voice-to-strudel`. The legacy
+`voice-to-strudel` command remains available for existing scripts.
+
+To work from a source checkout instead:
+
+```bash
+git clone https://github.com/beejsbj/melograph.git
+cd melograph
 uv sync --extra test
 ```
+
+Inside a source checkout, prefix the `melograph` commands below with `uv run`.
+
+### Agent skill
+
+The repository includes a model-invoked skill for agents that operate an already
+installed `melograph` command. Install it separately from the CLI:
+
+```bash
+npx skills add beejsbj/melograph --skill melograph --global
+```
+
+The skill handles capture, artifact verification, re-rendering, and tracker
+comparison. It never installs or upgrades the executable itself.
 
 ## Capture
 
 One command accepts WAV or M4A:
 
 ```bash
-uv run voice-to-strudel capture melody.m4a --out out/melody
+melograph capture melody.m4a --out out/melody
 ```
 
 Or record a fixed-length microphone take:
 
 ```bash
-uv run voice-to-strudel capture mic --seconds 12 --out out/mic-take
+melograph capture mic --seconds 12 --out out/mic-take
 ```
 
 Praat is used unless a tracker is selected explicitly. To try librosa's pYIN:
 
 ```bash
-uv sync --extra pyin
-uv run voice-to-strudel capture melody.m4a --tracker pyin --out out/melody-pyin
+uv tool install --reinstall 'voice-to-strudel[pyin] @ git+https://github.com/beejsbj/melograph'
+melograph capture melody.m4a --tracker pyin --out out/melody-pyin
 ```
 
 Both trackers write the same artifact formats. `analysis.json` records the
@@ -92,7 +120,7 @@ diagnostics. Invalid overlaps or events outside an edited phrase are rejected
 rather than silently time-stretched. Rebuild without tracking the audio again:
 
 ```bash
-uv run voice-to-strudel render out/melody/analysis.json
+melograph render out/melody/analysis.json
 ```
 
 ## Benchmark
@@ -101,8 +129,8 @@ The optional fusion lane is deliberately a benchmark candidate, not the
 default. It keeps a frame only when Praat and aubio agree within a cents gate.
 
 ```bash
-uv sync --extra fusion --extra test
-uv run voice-to-strudel benchmark melody.wav --out out/benchmark.json
+uv tool install --reinstall 'voice-to-strudel[fusion] @ git+https://github.com/beejsbj/melograph'
+melograph benchmark melody.wav --out out/benchmark.json
 ```
 
 The report records wall time, peak RSS, voicing coverage, octave-error candidates,

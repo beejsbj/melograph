@@ -31,6 +31,7 @@ def test_capture_writes_editable_and_audition_artifacts(tmp_path: Path) -> None:
         "strudel.js", "synth.wav", "contour-synth.wav", "audition.html",
     ):
         assert (output / relative).is_file()
+    assert "melograph render analysis.json" in (output / "audition.html").read_text()
 
 
 def test_capture_can_select_pyin(tmp_path: Path) -> None:

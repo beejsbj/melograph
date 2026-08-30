@@ -62,7 +62,7 @@ def track_pyin(
     except ImportError as error:
         raise RuntimeError(
             "pYIN tracking requires the optional 'pyin' dependency; "
-            "install it with `uv sync --extra pyin` or `pip install 'voice-to-strudel[pyin]'`"
+            "install the pYIN variant from https://github.com/beejsbj/melograph#capture"
         ) from error
 
     hop_length = max(1, round(hop_seconds * audio.sample_rate))

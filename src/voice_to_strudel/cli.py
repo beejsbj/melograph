@@ -13,7 +13,7 @@ from .segment import AnalysisConfig
 
 
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(prog="voice-to-strudel")
+    root = argparse.ArgumentParser(prog="melograph")
     commands = root.add_subparsers(dest="command", required=True)
 
     capture_parser = commands.add_parser("capture", help="analyze WAV/M4A or record a microphone")

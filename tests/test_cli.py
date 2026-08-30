@@ -5,6 +5,10 @@ from pathlib import Path
 from voice_to_strudel import cli
 
 
+def test_canonical_command_name_is_melograph() -> None:
+    assert cli.parser().prog == "melograph"
+
+
 def test_capture_tracker_option_reaches_pipeline(monkeypatch, tmp_path: Path) -> None:
     received = {}
 

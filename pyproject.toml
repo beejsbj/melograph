@@ -22,6 +22,7 @@ pyin = ["librosa>=0.11,<0.12"]
 test = ["aubio>=0.4.9,<0.5", "librosa>=0.11,<0.12", "pytest>=8,<9"]
 
 [project.scripts]
+melograph = "voice_to_strudel.cli:main"
 voice-to-strudel = "voice_to_strudel.cli:main"
 
 [project.urls]

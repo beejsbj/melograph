@@ -196,7 +196,7 @@ label{{display:grid;grid-template-columns:6rem 1fr;align-items:center;margin:.7r
 code{{color:#b8f7ce}} a{{color:#9cc9ff}}
 </style></head><body>
 <h1>Voice to Strudel A/B</h1>
-<p>Listen before accepting. Edit <a href="analysis.json">analysis.json</a>, then run <code>voice-to-strudel render analysis.json</code>.</p>
+<p>Listen before accepting. Edit <a href="analysis.json">analysis.json</a>, then run <code>melograph render analysis.json</code>.</p>
 {''.join(cards) if cards else '<p>No voiced phrases detected.</p>'}
 </body></html>"""
     (output_dir / "audition.html").write_text(page)
