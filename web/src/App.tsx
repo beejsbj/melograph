@@ -9,6 +9,7 @@ import type { AnalysisResult } from './types';
 
 export function App() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [sourceAudio, setSourceAudio] = useState<Blob | null>(null);
   const [sourceLabel, setSourceLabel] = useState('');
   const [status, setStatus] = useState<CaptureStatus>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +22,7 @@ export function App() {
       setStatus('analyzing');
       const next = await analyzeWav(wav);
       setSourceLabel(label);
+      setSourceAudio(wav);
       setResult(next);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Could not analyze this recording.');
@@ -32,8 +34,16 @@ export function App() {
   return (
     <div className="app">
       <SiteHeader />
-      {result ? (
-        <Workspace result={result} sourceLabel={sourceLabel} onReset={() => setResult(null)} />
+      {result && sourceAudio ? (
+        <Workspace
+          result={result}
+          sourceAudio={sourceAudio}
+          sourceLabel={sourceLabel}
+          onReset={() => {
+            setResult(null);
+            setSourceAudio(null);
+          }}
+        />
       ) : (
         <main className="landing page-shell">
           <aside className="landing__capture" aria-label="Record or upload a melody">

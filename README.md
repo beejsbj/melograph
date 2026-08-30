@@ -1,5 +1,7 @@
 # Voice to Strudel
 
+[Open Melograph](https://melograph-swart.vercel.app/) · [Source on GitHub](https://github.com/beejsbj/melograph)
+
 Voice to Strudel turns a monophonic hum or sung phrase into three things you can
 inspect and change: the raw pitch contour, phrase-separated note events, and
 numeric `note(...)` patterns for the Strudel REPL. It keeps each take separate;
@@ -30,8 +32,10 @@ The page records up to 45 seconds from the browser microphone or accepts an audi
 file. Audio is decoded and normalized to mono 22,050 Hz PCM WAV in the browser,
 then sent to `/api/analyze`; it is not persisted by the function. The result shows
 the raw and repaired contours together, phrase-separated note names and timing,
-and one editable/open-in-Strudel code surface per take. `/styleguide` exposes the
-same imported design primitives and contour composition used by the app.
+and one editable/open-in-Strudel code surface per take. A synchronized audition
+transport lets you compare the analyzed source, repaired contour, and interpreted
+note events without uploading another artifact. `/styleguide` exposes the same
+imported design primitives and contour composition used by the app.
 
 The Vercel request ceiling is 4.5 MB. The 45-second browser limit keeps the PCM
 payload below 2 MB, leaving room for headers and the JSON response.

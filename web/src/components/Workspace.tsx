@@ -1,13 +1,16 @@
 import { RotateCcw } from 'lucide-react';
+import { useState } from 'react';
 import type { AnalysisResult } from '../types';
 import { Button } from './Button';
 import { CodePanel } from './CodePanel';
 import { ContourChart } from './ContourChart';
 import { NoteLedger } from './NoteLedger';
 import { Panel } from './Panel';
+import { PlaybackTransport } from './PlaybackTransport';
 import { StatusChip } from './StatusChip';
 
-export function Workspace({ result, sourceLabel, onReset }: { result: AnalysisResult; sourceLabel: string; onReset: () => void }) {
+export function Workspace({ result, sourceAudio, sourceLabel, onReset }: { result: AnalysisResult; sourceAudio: Blob; sourceLabel: string; onReset: () => void }) {
+  const [playhead, setPlayhead] = useState(0);
   const notes = result.phrases.flatMap((phrase) => phrase.events).filter((event) => event.type === 'note').length;
   return (
     <main className="workspace page-shell">
@@ -24,7 +27,8 @@ export function Workspace({ result, sourceLabel, onReset }: { result: AnalysisRe
       </div>
 
       <Panel eyebrow="01 / pitch map" title="The voice before—and after—interpretation" className="panel--chart">
-        <ContourChart result={result} />
+        <PlaybackTransport result={result} sourceAudio={sourceAudio} onTimeChange={setPlayhead} />
+        <ContourChart result={result} playheadSeconds={playhead} />
       </Panel>
 
       <div className="workspace__lower">

@@ -10,9 +10,10 @@ const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 
 
 interface Props {
   result: Pick<AnalysisResult, 'frames' | 'phrases' | 'duration_seconds'>;
+  playheadSeconds?: number;
 }
 
-export function ContourChart({ result }: Props) {
+export function ContourChart({ result, playheadSeconds }: Props) {
   const pitches = result.frames.flatMap((frame) => [frame.midi_raw, frame.midi_processed]).filter(isNumber);
   const lowest = pitches.length ? Math.floor(Math.min(...pitches)) - 1 : 47;
   const highest = pitches.length ? Math.ceil(Math.max(...pitches)) + 1 : 59;
@@ -47,6 +48,15 @@ export function ContourChart({ result }: Props) {
         <NoteBlocks phrases={result.phrases} x={x} y={y} />
         {raw.map((path, index) => <path className="chart__raw" d={path} key={`raw-${index}`} />)}
         {repaired.map((path, index) => <path className="chart__repaired" d={path} key={`repaired-${index}`} />)}
+        {playheadSeconds !== undefined && (
+          <line
+            className="chart__playhead"
+            x1={x(Math.max(0, Math.min(result.duration_seconds, playheadSeconds)))}
+            x2={x(Math.max(0, Math.min(result.duration_seconds, playheadSeconds)))}
+            y1={TOP}
+            y2={HEIGHT - BOTTOM}
+          />
+        )}
       </svg>
       <div className="chart__legend">
         <span><i className="legend-line legend-line--raw" />raw voice</span>
