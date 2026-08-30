@@ -5,6 +5,7 @@ import numpy as np
 from .model import Audio, PitchTrack
 
 HOP_SECONDS = 256 / 22_050
+TRACKERS = ("praat", "pyin")
 
 
 def frame_rms_db(audio: Audio, times: np.ndarray, frame_seconds: float = 0.046) -> np.ndarray:
@@ -46,6 +47,66 @@ def track_praat(
     relative_energy = rms_db - float(np.max(rms_db))
     voiced = (f0 >= floor_hz) & (f0 <= ceiling_hz) & (relative_energy >= energy_gate_db)
     return PitchTrack(times, f0, confidence, voiced, rms_db, "praat-ac")
+
+
+def track_pyin(
+    audio: Audio,
+    *,
+    floor_hz: float = 65.0,
+    ceiling_hz: float = 1_050.0,
+    hop_seconds: float = HOP_SECONDS,
+    energy_gate_db: float = -24.0,
+) -> PitchTrack:
+    try:
+        import librosa
+    except ImportError as error:
+        raise RuntimeError(
+            "pYIN tracking requires the optional 'pyin' dependency; "
+            "install it with `uv sync --extra pyin` or `pip install 'voice-to-strudel[pyin]'`"
+        ) from error
+
+    hop_length = max(1, round(hop_seconds * audio.sample_rate))
+    f0, voiced_flag, voiced_probability = librosa.pyin(
+        np.asarray(audio.samples, dtype=np.float64),
+        fmin=floor_hz,
+        fmax=ceiling_hz,
+        sr=audio.sample_rate,
+        hop_length=hop_length,
+    )
+    times = np.arange(len(f0), dtype=float) * hop_length / audio.sample_rate
+    f0 = np.nan_to_num(np.asarray(f0, dtype=float), nan=0.0)
+    confidence = np.nan_to_num(np.asarray(voiced_probability, dtype=float), nan=0.0)
+    rms_db = frame_rms_db(audio, times)
+    relative_energy = rms_db - float(np.max(rms_db))
+    voiced = (
+        np.asarray(voiced_flag, dtype=bool)
+        & (f0 >= floor_hz)
+        & (f0 <= ceiling_hz)
+        & (relative_energy >= energy_gate_db)
+    )
+    return PitchTrack(times, f0, confidence, voiced, rms_db, "librosa-pyin")
+
+
+def track_pitch(
+    audio: Audio,
+    *,
+    tracker: str = "praat",
+    floor_hz: float = 65.0,
+    ceiling_hz: float = 1_050.0,
+    hop_seconds: float = HOP_SECONDS,
+    energy_gate_db: float = -24.0,
+) -> PitchTrack:
+    options = {
+        "floor_hz": floor_hz,
+        "ceiling_hz": ceiling_hz,
+        "hop_seconds": hop_seconds,
+        "energy_gate_db": energy_gate_db,
+    }
+    if tracker == "praat":
+        return track_praat(audio, **options)
+    if tracker == "pyin":
+        return track_pyin(audio, **options)
+    raise ValueError(f"unknown tracker: {tracker}; expected one of {', '.join(TRACKERS)}")
 
 
 def track_aubio(

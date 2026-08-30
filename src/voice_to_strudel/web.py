@@ -4,21 +4,21 @@ import math
 
 from .audio import read_wav_bytes
 from .model import midi_to_note_name
-from .pitch import track_praat
+from .pitch import track_pitch
 from .segment import AnalysisConfig, analyze_events
 from .strudel import phrase_pattern, serialize_strudel, strudel_repl_url
 
 MAX_WEB_AUDIO_SECONDS = 45.0
 
 
-def analyze_wav_payload(payload: bytes) -> dict:
+def analyze_wav_payload(payload: bytes, *, tracker: str = "praat") -> dict:
     audio = read_wav_bytes(payload)
     if audio.duration <= 0:
         raise ValueError("the recording is empty")
     if audio.duration > MAX_WEB_AUDIO_SECONDS:
         raise ValueError(f"recordings are limited to {MAX_WEB_AUDIO_SECONDS:.0f} seconds")
 
-    track = track_praat(audio)
+    track = track_pitch(audio, tracker=tracker)
     analysis, frames = analyze_events(audio, track, AnalysisConfig())
     phrases = analysis["phrases"]
     for phrase in phrases:

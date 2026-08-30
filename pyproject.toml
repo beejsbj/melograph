@@ -18,7 +18,8 @@ dependencies = [
 
 [project.optional-dependencies]
 fusion = ["aubio>=0.4.9,<0.5"]
-test = ["aubio>=0.4.9,<0.5", "pytest>=8,<9"]
+pyin = ["librosa>=0.11,<0.12"]
+test = ["aubio>=0.4.9,<0.5", "librosa>=0.11,<0.12", "pytest>=8,<9"]
 
 [project.scripts]
 voice-to-strudel = "voice_to_strudel.cli:main"

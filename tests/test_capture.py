@@ -33,6 +33,18 @@ def test_capture_writes_editable_and_audition_artifacts(tmp_path: Path) -> None:
         assert (output / relative).is_file()
 
 
+def test_capture_can_select_pyin(tmp_path: Path) -> None:
+    sample_rate = 22_050
+    times = np.arange(sample_rate) / sample_rate
+    source = tmp_path / "input.wav"
+    write_wav(source, 0.35 * np.sin(2 * np.pi * 220 * times), sample_rate)
+
+    analysis = capture(str(source), tmp_path / "output", tracker="pyin")
+
+    assert analysis["tracker"] == "librosa-pyin"
+    assert analysis["phrases"]
+
+
 def test_benchmark_writes_a_human_audition_surface(tmp_path: Path) -> None:
     sample_rate = 22_050
     times = np.arange(sample_rate) / sample_rate

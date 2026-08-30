@@ -8,6 +8,7 @@ from pathlib import Path
 from .artifacts import render_edited
 from .benchmark import benchmark_file, benchmark_worker
 from .pipeline import capture
+from .pitch import TRACKERS
 from .segment import AnalysisConfig
 
 
@@ -20,6 +21,12 @@ def parser() -> argparse.ArgumentParser:
     capture_parser.add_argument("--out", type=Path, required=True, help="artifact directory")
     capture_parser.add_argument("--seconds", type=float, help="microphone recording duration")
     capture_parser.add_argument("--phrase-gap", type=float, default=0.65, help="seconds of silence between phrases")
+    capture_parser.add_argument(
+        "--tracker",
+        choices=TRACKERS,
+        default="praat",
+        help="pitch tracker (default: praat; pyin requires the optional pyin dependency)",
+    )
 
     render_parser = commands.add_parser("render", help="rebuild outputs from an edited analysis.json")
     render_parser.add_argument("analysis", type=Path)
@@ -47,6 +54,7 @@ def main(argv: list[str] | None = None) -> int:
                 arguments.out,
                 seconds=arguments.seconds,
                 config=AnalysisConfig(phrase_gap_seconds=arguments.phrase_gap),
+                tracker=arguments.tracker,
             )
             print(f"wrote {arguments.out} ({len(analysis['phrases'])} phrases)")
         elif arguments.command == "render":

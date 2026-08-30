@@ -9,6 +9,10 @@ The default tracker is Praat autocorrelation. It is CPU-first, runs locally, and
 keeps the source recording beside every derived artifact. Human listening is
 the acceptance test; confidence values are diagnostics, not truth.
 
+pYIN is available as an optional alternate interpretation. It is useful for
+comparing ambiguous or noisy monophonic takes, but it is not fused with Praat
+and is not assumed to be more accurate.
+
 ## Melograph web app
 
 The browser adapter is called **Melograph**: voice becomes a continuous contour,
@@ -55,6 +59,17 @@ Or record a fixed-length microphone take:
 ```bash
 uv run voice-to-strudel capture mic --seconds 12 --out out/mic-take
 ```
+
+Praat is used unless a tracker is selected explicitly. To try librosa's pYIN:
+
+```bash
+uv sync --extra pyin
+uv run voice-to-strudel capture melody.m4a --tracker pyin --out out/melody-pyin
+```
+
+Both trackers write the same artifact formats. `analysis.json` records the
+actual implementation as `praat-ac` or `librosa-pyin`, so downstream tools can
+identify how a take was interpreted.
 
 The output directory contains:
 
@@ -105,6 +120,9 @@ The named pilot fixture and current result are recorded in
 - Slides and vibrato remain in `contour.csv` and `contour-synth.wav`; the event
   summary records their pitch span, while ordinary Strudel notes necessarily
   reduce each gesture to one editable centre pitch.
+- pYIN adds librosa and its scientific-Python dependencies, takes longer to load,
+  and may make different voicing or octave decisions. Treat the tracker switch
+  as an A/B listening aid, not a quality setting.
 - Microphone capture depends on an `ffmpeg` input device (`pulse`/`alsa` on
   Linux, `avfoundation` on macOS). Use a recorded file if device discovery fails.
 
@@ -113,5 +131,6 @@ The named pilot fixture and current result are recorded in
 - Voice to Strudel: GPL-3.0-or-later
 - NumPy: BSD-3-Clause
 - Parselmouth: GPL-3.0-or-later (Praat itself is GPL-3.0-or-later)
+- librosa, optional pYIN tracker: ISC
 - aubio, optional fusion benchmark: GPL-3.0-or-later
 - ffmpeg: build-dependent; the host binary may be LGPL or GPL

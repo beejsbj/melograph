@@ -4,7 +4,7 @@ from pathlib import Path
 
 from .artifacts import preserve_original, sha256_file, write_capture
 from .audio import capture_microphone, normalize_audio, read_wav
-from .pitch import track_praat
+from .pitch import track_pitch
 from .segment import AnalysisConfig, analyze_events
 
 
@@ -14,6 +14,7 @@ def capture(
     *,
     seconds: float | None = None,
     config: AnalysisConfig | None = None,
+    tracker: str = "praat",
 ) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
     normalized = output_dir / "source.wav"
@@ -30,7 +31,7 @@ def capture(
         input_kind = "file"
 
     audio = read_wav(normalized)
-    track = track_praat(audio)
+    track = track_pitch(audio, tracker=tracker)
     event_analysis, frame_data = analyze_events(audio, track, config or AnalysisConfig())
     analysis = {
         "schema_version": 1,
@@ -48,4 +49,3 @@ def capture(
     }
     write_capture(output_dir, analysis, track, frame_data)
     return analysis
-

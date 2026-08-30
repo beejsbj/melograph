@@ -10,7 +10,7 @@ import numpy as np
 from voice_to_strudel.web import analyze_wav_payload
 
 
-def test_web_analysis_returns_contour_names_and_runnable_take() -> None:
+def tone_payload() -> bytes:
     sample_rate = 22_050
     time = np.arange(sample_rate) / sample_rate
     samples = 0.35 * np.sin(2 * np.pi * 220 * time)
@@ -21,8 +21,12 @@ def test_web_analysis_returns_contour_names_and_runnable_take() -> None:
         handle.setsampwidth(2)
         handle.setframerate(sample_rate)
         handle.writeframes(pcm.tobytes())
+    return payload.getvalue()
 
-    result = analyze_wav_payload(payload.getvalue())
+
+def test_web_analysis_returns_contour_names_and_runnable_take() -> None:
+
+    result = analyze_wav_payload(tone_payload())
 
     assert result["product"] == "Melograph"
     assert result["tracker"] == "praat-ac"
@@ -31,3 +35,11 @@ def test_web_analysis_returns_contour_names_and_runnable_take() -> None:
     assert result["takes"][0]["code"].startswith("setcpm(60)\nnote(")
     encoded = unquote(result["takes"][0]["repl_url"].split("#", 1)[1])
     assert base64.b64decode(encoded).decode() == result["takes"][0]["code"]
+
+
+def test_web_analysis_can_select_pyin() -> None:
+    result = analyze_wav_payload(tone_payload(), tracker="pyin")
+
+    assert result["tracker"] == "librosa-pyin"
+    assert result["frames"]
+    assert result["phrases"]
