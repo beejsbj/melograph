@@ -48,7 +48,8 @@ def analyze_wav_payload(payload: bytes, *, tracker: str = "praat") -> dict:
         "takes": [
             {
                 "number": int(phrase["number"]),
-                "code": f"setcpm(60)\n{phrase_pattern(phrase)}\n",
+                "code": f"{phrase_pattern(phrase)}\n",
+                "code_midi": f'{phrase_pattern(phrase, pitch_format="midi")}\n',
                 "repl_url": strudel_repl_url(phrase),
             }
             for phrase in phrases

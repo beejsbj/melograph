@@ -23,7 +23,7 @@ def phrase() -> dict:
 
 
 def test_serialization_is_stable_and_keeps_repeated_attacks() -> None:
-    expected = 'note("60@20 60@20 ~@10 63@10").slow(0.60)'
+    expected = '`<\nC4@0.1 C4@0.1 ~@0.05 D#4@0.05\n>`\n  .as("note")\n  .sound("triangle")'
     assert phrase_pattern(phrase()) == expected
     analysis = {"phrases": [phrase()]}
     assert serialize_strudel(analysis) == serialize_strudel(analysis)
@@ -38,13 +38,14 @@ def test_repl_url_embeds_one_runnable_take_as_base64() -> None:
     url = strudel_repl_url(phrase())
     encoded = unquote(url.removeprefix("https://strudel.cc/#"))
     code = base64.b64decode(encoded).decode()
-    assert code == 'setcpm(60)\nnote("60@20 60@20 ~@10 63@10").slow(0.60)\n'
+    assert code == '`<\nC4@0.1 C4@0.1 ~@0.05 D#4@0.05\n>`\n  .as("note")\n  .sound("triangle")\n'
 
 
-def test_decimal_midi_is_serialized_without_truncation() -> None:
+def test_note_names_are_default_and_midi_precision_is_optional() -> None:
     value = phrase()
     value["events"][0]["midi"] = 60.75
-    assert '60.75@20' in phrase_pattern(value)
+    assert "C#4@0.1" in phrase_pattern(value)
+    assert "60.75@0.1" in phrase_pattern(value, pitch_format="midi")
 
 
 def test_edit_normalization_recomputes_durations() -> None:

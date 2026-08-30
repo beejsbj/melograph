@@ -32,7 +32,10 @@ def test_web_analysis_returns_contour_names_and_runnable_take() -> None:
     assert result["tracker"] == "praat-ac"
     assert result["frames"]
     assert result["phrases"][0]["events"][0]["note"] == "A3"
-    assert result["takes"][0]["code"].startswith("setcpm(60)\nnote(")
+    assert result["takes"][0]["code"].startswith("`<\n")
+    assert "A3@" in result["takes"][0]["code"]
+    assert '.as("note")' in result["takes"][0]["code"]
+    assert "57@" in result["takes"][0]["code_midi"]
     encoded = unquote(result["takes"][0]["repl_url"].split("#", 1)[1])
     assert base64.b64decode(encoded).decode() == result["takes"][0]["code"]
 

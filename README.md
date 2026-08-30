@@ -4,7 +4,7 @@
 
 Melograph turns a monophonic hum or sung phrase into three things you can
 inspect and change: the raw pitch contour, phrase-separated note events, and
-numeric `note(...)` patterns for the Strudel REPL. It keeps each take separate;
+readable mini-notation patterns for the Strudel REPL. It keeps each take separate;
 it does not average repeated motifs into one supposedly canonical melody.
 
 In the CLI, the default tracker is Praat autocorrelation. It is CPU-first, runs
@@ -33,10 +33,11 @@ The page records up to 45 seconds from the browser microphone or accepts an audi
 file. Audio is decoded and normalized to mono 22,050 Hz PCM WAV in the browser,
 then sent to `/api/analyze`; it is not persisted by the function. The result shows
 the raw and repaired contours together, phrase-separated note names and timing,
-and one editable/open-in-Strudel code surface per take. A synchronized audition
-transport lets you compare the analyzed source, repaired contour, and interpreted
-note events without uploading another artifact. `/styleguide` exposes the same
-imported design primitives and contour composition used by the app.
+and one editable/open-in-Strudel code surface per take. Note names are the default,
+with precise MIDI values available as a toggle. A synchronized audition transport
+lets you compare the analyzed source, repaired contour, interpreted note events,
+and live Strudel output without uploading another artifact. `/styleguide` exposes
+the same imported design primitives and contour composition used by the app.
 
 The API rejects request bodies over 4 MB. The 45-second browser limit keeps mono
 22,050 Hz 16-bit PCM below 2 MB, comfortably under that limit.
@@ -113,7 +114,7 @@ The output directory contains:
 - `contour.csv`: time, F0, MIDI, confidence, voicing, and energy per frame
 - `events.csv`: phrase and note-event timing in tabular form
 - `analysis.json`: editable phrase boundaries and note events
-- `strudel.js`: directly runnable numeric-note patterns
+- `strudel.js`: directly runnable note-name patterns using Strudel's default cycle rate
 - `audition.html`: local A/B players for every phrase
 - `contour-synth.wav`: a sine rendering that follows the tracked contour
 - `synth.wav`: a quantized sine rendering of the editable note events
@@ -168,6 +169,7 @@ The named pilot fixture and current result are recorded in
 - Melograph (`voice-to-strudel` Python distribution): GPL-3.0-or-later
 - NumPy: BSD-3-Clause
 - Parselmouth: GPL-3.0-or-later (Praat itself is GPL-3.0-or-later)
+- Strudel browser packages: AGPL-3.0-or-later
 - librosa, optional pYIN tracker: ISC
 - aubio, optional fusion benchmark: GPL-3.0-or-later
 - ffmpeg: build-dependent; the host binary may be LGPL or GPL

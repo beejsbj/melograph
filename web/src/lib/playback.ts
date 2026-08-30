@@ -1,6 +1,6 @@
 import type { Frame, Phrase } from '../types';
 
-export type PlaybackMode = 'voice' | 'contour' | 'notes';
+export type PlaybackMode = 'voice' | 'contour' | 'notes' | 'strudel';
 
 const MAX_CONTOUR_GAP_SECONDS = 0.12;
 const SYNTH_LEVEL = 0.16;

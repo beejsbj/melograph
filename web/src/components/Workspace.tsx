@@ -11,6 +11,7 @@ import { StatusChip } from './StatusChip';
 
 export function Workspace({ result, sourceAudio, sourceLabel, onReset }: { result: AnalysisResult; sourceAudio: Blob; sourceLabel: string; onReset: () => void }) {
   const [playhead, setPlayhead] = useState(0);
+  const [strudelCode, setStrudelCode] = useState(result.takes[0]?.code ?? '');
   const notes = result.phrases.flatMap((phrase) => phrase.events).filter((event) => event.type === 'note').length;
   return (
     <main className="workspace page-shell">
@@ -27,7 +28,7 @@ export function Workspace({ result, sourceAudio, sourceLabel, onReset }: { resul
       </div>
 
       <Panel eyebrow="01 / pitch map" title="The voice before—and after—interpretation" className="panel--chart">
-        <PlaybackTransport result={result} sourceAudio={sourceAudio} onTimeChange={setPlayhead} />
+        <PlaybackTransport result={result} sourceAudio={sourceAudio} strudelCode={strudelCode} onTimeChange={setPlayhead} />
         <ContourChart result={result} playheadSeconds={playhead} />
       </Panel>
 
@@ -36,7 +37,7 @@ export function Workspace({ result, sourceAudio, sourceLabel, onReset }: { resul
           <NoteLedger phrases={result.phrases} />
         </Panel>
         <Panel eyebrow="03 / first-party output" title="Editable Strudel">
-          <CodePanel takes={result.takes} />
+          <CodePanel takes={result.takes} onActiveCodeChange={setStrudelCode} />
         </Panel>
       </div>
       <p className="workspace__footnote">The contour is authoritative. Named notes and code are editable interpretations; slides and vibrato remain visible in the line.</p>

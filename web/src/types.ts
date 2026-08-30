@@ -31,6 +31,7 @@ export interface Phrase {
 export interface Take {
   number: number;
   code: string;
+  code_midi: string;
   repl_url: string;
 }
 
