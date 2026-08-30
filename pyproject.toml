@@ -25,7 +25,9 @@ test = ["aubio>=0.4.9,<0.5", "librosa>=0.11,<0.12", "pytest>=8,<9"]
 voice-to-strudel = "voice_to_strudel.cli:main"
 
 [project.urls]
+Homepage = "https://melograph-swart.vercel.app/"
 License = "https://www.gnu.org/licenses/gpl-3.0.html"
+Source = "https://github.com/beejsbj/melograph"
 
 [tool.setuptools.packages.find]
 where = ["src"]
