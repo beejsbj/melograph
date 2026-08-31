@@ -41,8 +41,17 @@ export function StyleGuide() {
       <p>The source components below are the same imports used by the application.</p>
       <Panel eyebrow="tokens" title="Ground, brass, trace, voice">
         <div className="swatches">
-          {['ground', 'surface', 'brass', 'trace', 'voice', 'muted'].map((name) => <div className={`swatch swatch--${name}`} key={name}><i /><span>{name}</span></div>)}
+          {['ground', 'surface', 'brass', 'brass-hi', 'brass-lo', 'trace', 'voice', 'muted'].map((name) => <div className={`swatch swatch--${name}`} key={name}><i /><span>{name}</span></div>)}
         </div>
+      </Panel>
+      <Panel eyebrow="brass finish variants" title="One metal, four readings">
+        <div className="brass-variant-grid">
+          <div className="brass-variant brass-variant--flat"><span>flat</span><small>--brass</small></div>
+          <div className="brass brass-variant"><span>sheen</span><small>--brass-fill + --brass-sheen</small></div>
+          <div className="brass-variant brass-variant--flat brass-variant--glow"><span>glow</span><small>--shadow-glow-brass</small></div>
+          <div className="brass brass-variant brass-variant--glow"><span>sheen + glow</span><small>finish + halo</small></div>
+        </div>
+        <p className="brass-variant-note">The application uses the same family for its lit trace, primary capture action, active controls, and focus signal.</p>
       </Panel>
       <Panel eyebrow="primitives" title="Controls and state">
         <div className="specimen-row">

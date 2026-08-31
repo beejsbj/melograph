@@ -35,7 +35,7 @@ export function ContourChart({ result, playheadSeconds, rangeStart = 0, rangeEnd
         <defs>
           <linearGradient id="note-fill" x1="0" x2="1">
             <stop offset="0" stopColor="var(--brass)" stopOpacity=".22" />
-            <stop offset="1" stopColor="var(--brass-hot)" stopOpacity=".08" />
+            <stop offset="1" stopColor="var(--brass-hi)" stopOpacity=".08" />
           </linearGradient>
         </defs>
         {Array.from({ length: span + 1 }, (_, index) => lowest + index).map((midi) => (
