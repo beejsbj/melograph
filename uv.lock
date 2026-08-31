@@ -1196,6 +1196,9 @@ dependencies = [
 fusion = [
     { name = "aubio" },
 ]
+live = [
+    { name = "aubio" },
+]
 pyin = [
     { name = "librosa" },
 ]
@@ -1208,6 +1211,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "aubio", marker = "extra == 'fusion'", specifier = ">=0.4.9,<0.5" },
+    { name = "aubio", marker = "extra == 'live'", specifier = ">=0.4.9,<0.5" },
     { name = "aubio", marker = "extra == 'test'", specifier = ">=0.4.9,<0.5" },
     { name = "librosa", marker = "extra == 'pyin'", specifier = ">=0.11,<0.12" },
     { name = "librosa", marker = "extra == 'test'", specifier = ">=0.11,<0.12" },
@@ -1215,4 +1219,4 @@ requires-dist = [
     { name = "praat-parselmouth", specifier = ">=0.4.6,<0.5" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8,<9" },
 ]
-provides-extras = ["fusion", "pyin", "test"]
+provides-extras = ["fusion", "live", "pyin", "test"]

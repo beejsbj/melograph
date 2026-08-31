@@ -2,12 +2,14 @@ import { Activity, AudioLines, Code2 } from 'lucide-react';
 import { useState } from 'react';
 import { AnalysisOverlay } from './components/AnalysisOverlay';
 import { CaptureNotch } from './components/CaptureNotch';
+import { LivePitchPreview } from './components/LivePitchPreview';
 import type { CaptureStatus } from './components/Recorder';
 import { StatusChip } from './components/StatusChip';
 import { Workspace } from './components/Workspace';
 import { analyzeWav } from './lib/api';
 import { audioBlobToWav } from './lib/audio';
 import type { AnalysisResult } from './types';
+import type { LivePitchFrame } from './lib/livePitch';
 
 export function App() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -16,6 +18,17 @@ export function App() {
   const [status, setStatus] = useState<CaptureStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [captureVersion, setCaptureVersion] = useState(0);
+  const [recording, setRecording] = useState(false);
+  const [liveFrames, setLiveFrames] = useState<LivePitchFrame[]>([]);
+  const [liveError, setLiveError] = useState<string | null>(null);
+
+  function handleRecordingChange(next: boolean) {
+    setRecording(next);
+    if (next) {
+      setLiveFrames([]);
+      setLiveError(null);
+    }
+  }
 
   async function handleAudio(blob: Blob, label: string) {
     setError(null);
@@ -44,9 +57,13 @@ export function App() {
             error={error}
             onAudio={(blob, label) => void handleAudio(blob, label)}
             onError={setError}
+            onRecordingChange={handleRecordingChange}
+            onLiveFrame={(frame) => setLiveFrames((frames) => [...frames.slice(-239), frame])}
+            onLiveError={setLiveError}
           />
         )}
       />
+      {recording && <LivePitchPreview frames={liveFrames} error={liveError} />}
       <div className="app-stage">
         {result && sourceAudio ? (
           <Workspace

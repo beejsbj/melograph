@@ -4,9 +4,10 @@ from pathlib import Path
 
 import numpy as np
 
+from voice_to_strudel import pipeline
 from voice_to_strudel.audio import write_wav
 from voice_to_strudel.benchmark import benchmark_file
-from voice_to_strudel.pipeline import capture
+from voice_to_strudel.pipeline import capture, capture_live_microphone
 
 
 def test_capture_writes_editable_and_audition_artifacts(tmp_path: Path) -> None:
@@ -44,6 +45,33 @@ def test_capture_can_select_pyin(tmp_path: Path) -> None:
 
     assert analysis["tracker"] == "librosa-pyin"
     assert analysis["phrases"]
+
+
+def test_live_microphone_capture_finalizes_the_streamed_wav_with_praat(
+    monkeypatch, tmp_path: Path
+) -> None:
+    sample_rate = 22_050
+    times = np.arange(sample_rate) / sample_rate
+    samples = 0.35 * np.sin(2 * np.pi * 220 * times)
+
+    def fake_stream(destination, seconds, on_samples) -> None:
+        assert seconds == 1.0
+        for offset in range(0, len(samples), 512):
+            on_samples(samples[offset : offset + 512])
+        write_wav(destination, samples, sample_rate)
+
+    monkeypatch.setattr(pipeline, "capture_microphone_stream", fake_stream)
+    observed = []
+
+    analysis = capture_live_microphone(
+        tmp_path / "live", seconds=1.0, on_frame=observed.append
+    )
+
+    assert observed
+    assert analysis["tracker"] == "praat-ac"
+    assert analysis["source"]["input_kind"] == "microphone"
+    assert (tmp_path / "live" / "source.wav").is_file()
+    assert (tmp_path / "live" / "contour.csv").is_file()
 
 
 def test_benchmark_writes_a_human_audition_surface(tmp_path: Path) -> None:
