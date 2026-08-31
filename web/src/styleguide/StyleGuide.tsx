@@ -3,6 +3,7 @@ import { Button } from '../components/Button';
 import { CaptureNotch } from '../components/CaptureNotch';
 import { ContourChart } from '../components/ContourChart';
 import { Panel } from '../components/Panel';
+import { LivePitchPreview } from '../components/LivePitchPreview';
 import { RecordButton } from '../components/RecordButton';
 import { ScopeSelector } from '../components/ScopeSelector';
 import { StatusChip } from '../components/StatusChip';
@@ -61,6 +62,18 @@ export function StyleGuide() {
       </Panel>
       <Panel eyebrow="scope primitive" title="One selection drives every analysis surface">
         <div className="specimen-row"><ScopeSelector phrases={specimen.phrases} value="full" onChange={() => undefined} /></div>
+      </Panel>
+      <Panel eyebrow="recording compound" title="Provisional live pitch">
+        <div className="live-pitch-specimen">
+          <LivePitchPreview frames={specimen.frames.slice(0, 45).map((frame) => ({
+            timestamp_seconds: frame.time_seconds,
+            frequency_hz: frame.f0_hz_raw,
+            midi: frame.midi_raw,
+            clarity: frame.confidence,
+            voiced: frame.voiced,
+            note: 'A3',
+          }))} />
+        </div>
       </Panel>
       <Panel eyebrow="hero composition" title="Contour with interpreted events">
         <ContourChart result={specimen} />

@@ -15,6 +15,7 @@
     "@strudel/transpiler": "1.2.2",
     "@strudel/webaudio": "1.2.2",
     "lucide-react": "^0.468.0",
+    "pitchy": "^4.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

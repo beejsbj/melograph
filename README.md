@@ -35,6 +35,13 @@ then sent to `/api/analyze`; it is not persisted by the function. The microphone
 remains available in the top notch while the hero, analysis veil, and completed
 workspace occupy one continuous surface.
 
+While the microphone is recording, the same browser `MediaStream` also feeds a
+causal Pitchy MPM preview through a batched Web Audio worklet. The small live
+contour, current note, and clarity are explicitly provisional; they remain in the
+browser and are never streamed to Vercel. Stopping the recorder keeps the existing
+analysis veil while the complete WAV is finalized by Praat, whose contour replaces
+the preview. File uploads continue to use batch analysis only.
+
 The result shows the raw and repaired contours together, phrase-separated note
 names and timing, and editable Strudel output. A sustained silence (about 0.65
 seconds by default) begins another take. One shared Full/Take selector changes the
@@ -100,6 +107,21 @@ Or record a fixed-length microphone take:
 ```bash
 melograph capture mic --seconds 12 --out out/mic-take
 ```
+
+For provisional pitch readings during capture, install the optional live lane and
+add `--live`:
+
+```bash
+uv tool install --reinstall 'voice-to-strudel[live] @ git+https://github.com/beejsbj/melograph'
+melograph capture mic --live --seconds 12 --out out/mic-take
+```
+
+The terminal view rate-limits readings for legibility. For every causal aubio
+YINFFT frame as newline-delimited JSON, use `--live-output jsonl`. Each line has
+`timestamp_seconds`, `frequency_hz`, `midi`, `clarity`, `voiced`, and `note`.
+Machine-readable output stays on stdout; finalization status goes to stderr.
+After either live view ends, Melograph runs the canonical Praat analysis over the
+saved `source.wav` and writes the normal artifact directory.
 
 Praat is used unless a tracker is selected explicitly. To try librosa's pYIN:
 
@@ -169,6 +191,8 @@ The named pilot fixture and current result are recorded in
   as an A/B listening aid, not a quality setting.
 - Microphone capture depends on an `ffmpeg` input device (`pulse`/`alsa` on
   Linux, `avfoundation` on macOS). Use a recorded file if device discovery fails.
+- Live readings are a low-latency sketch from aubio YINFFT in the CLI and Pitchy
+  MPM in the browser. They may revise on the authoritative final Praat contour.
 
 ## Dependency licences
 
@@ -176,6 +200,7 @@ The named pilot fixture and current result are recorded in
 - NumPy: BSD-3-Clause
 - Parselmouth: GPL-3.0-or-later (Praat itself is GPL-3.0-or-later)
 - Strudel browser packages: AGPL-3.0-or-later
+- Pitchy, browser MPM preview: MIT
 - librosa, optional pYIN tracker: ISC
-- aubio, optional fusion benchmark: GPL-3.0-or-later
+- aubio, optional live capture and fusion benchmark: GPL-3.0-or-later
 - ffmpeg: build-dependent; the host binary may be LGPL or GPL

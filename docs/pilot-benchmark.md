@@ -32,3 +32,12 @@ cost. Fusion remains an optional benchmark extra rather than a capture mode.
 
 The default reproduced seven separate phrases and reported no octave-error
 candidates. It does not combine or vote across the seven takes.
+
+## Provisional live lane
+
+The BJS-183 pilot also measured standalone aubio YINFFT on the 31.68-second
+fixture at 0.214 seconds wall time and 41 MiB peak RSS. Its contour was noisier
+than Praat, but the lower cost makes it useful as a causal display while audio is
+still arriving. It is therefore a provisional live tracker, not another final
+interpretation: CLI capture shows its frames immediately, then runs Praat over
+the completed `source.wav` for every durable artifact.

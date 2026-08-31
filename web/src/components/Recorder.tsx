@@ -1,5 +1,7 @@
 import { Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { startLivePitchMonitor, type LivePitchMonitor } from '../lib/liveAudio';
+import type { LivePitchFrame } from '../lib/livePitch';
 import { Button } from './Button';
 import { RecordButton } from './RecordButton';
 
@@ -13,9 +15,21 @@ interface Props {
   busyLabel?: string;
   onAudio: (blob: Blob, label: string) => void;
   onError?: (message: string) => void;
+  onRecordingChange?: (recording: boolean) => void;
+  onLiveFrame?: (frame: LivePitchFrame) => void;
+  onLiveError?: (message: string) => void;
 }
 
-export function Recorder({ disabled, compact = false, busyLabel, onAudio, onError }: Props) {
+export function Recorder({
+  disabled,
+  compact = false,
+  busyLabel,
+  onAudio,
+  onError,
+  onRecordingChange,
+  onLiveFrame,
+  onLiveError,
+}: Props) {
   const [recording, setRecording] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const recorder = useRef<MediaRecorder | null>(null);
@@ -23,6 +37,8 @@ export function Recorder({ disabled, compact = false, busyLabel, onAudio, onErro
   const chunks = useRef<Blob[]>([]);
   const elapsedRef = useRef(0);
   const fileInput = useRef<HTMLInputElement>(null);
+  const monitor = useRef<LivePitchMonitor | null>(null);
+  const captureGeneration = useRef(0);
 
   useEffect(() => {
     if (!recording) return;
@@ -38,7 +54,11 @@ export function Recorder({ disabled, compact = false, busyLabel, onAudio, onErro
     if (elapsed >= MAX_SECONDS && recording) recorder.current?.stop();
   }, [elapsed, recording]);
 
-  useEffect(() => () => stream.current?.getTracks().forEach((track) => track.stop()), []);
+  useEffect(() => () => {
+    captureGeneration.current += 1;
+    stream.current?.getTracks().forEach((track) => track.stop());
+    void monitor.current?.stop();
+  }, []);
 
   async function start() {
     try {
@@ -49,22 +69,40 @@ export function Recorder({ disabled, compact = false, busyLabel, onAudio, onErro
         audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       });
       stream.current = media;
+      const generation = captureGeneration.current + 1;
+      captureGeneration.current = generation;
       chunks.current = [];
       elapsedRef.current = 0;
       setElapsed(0);
       const next = new MediaRecorder(media);
       next.ondataavailable = (event) => event.data.size && chunks.current.push(event.data);
       next.onstop = () => {
+        captureGeneration.current += 1;
+        void monitor.current?.stop();
+        monitor.current = null;
         const blob = new Blob(chunks.current, { type: next.mimeType });
         media.getTracks().forEach((track) => track.stop());
         stream.current = null;
         setRecording(false);
+        onRecordingChange?.(false);
         onAudio(blob, `mic take · ${elapsedRef.current.toFixed(1)}s`);
       };
       recorder.current = next;
       next.start();
       setRecording(true);
+      onRecordingChange?.(true);
+      try {
+        const liveMonitor = await startLivePitchMonitor(media, (frame) => onLiveFrame?.(frame));
+        if (captureGeneration.current === generation && stream.current === media) {
+          monitor.current = liveMonitor;
+        } else {
+          await liveMonitor.stop();
+        }
+      } catch (error) {
+        onLiveError?.(error instanceof Error ? error.message : 'Live pitch preview could not start.');
+      }
     } catch (error) {
+      onRecordingChange?.(false);
       onError?.(error instanceof Error ? error.message : 'Microphone access failed.');
     }
   }
@@ -95,7 +133,10 @@ export function Recorder({ disabled, compact = false, busyLabel, onAudio, onErro
         hidden
         onChange={(event) => {
           const file = event.target.files?.[0];
-          if (file) onAudio(file, file.name);
+          if (file) {
+            onRecordingChange?.(false);
+            onAudio(file, file.name);
+          }
           event.target.value = '';
         }}
       />

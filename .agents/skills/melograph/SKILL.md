@@ -33,6 +33,18 @@ Keep source audio and generated artifacts local unless the user explicitly asks 
    melograph capture mic --seconds 12 --out "/path/to/output"
    ```
 
+   When the user explicitly requests live terminal pitch feedback, first run the
+   command with `--live`. If the optional aubio dependency is absent, surface its
+   installation instruction and stop; installation remains a user action.
+
+   ```bash
+   melograph capture mic --live --seconds 12 --out "/path/to/output"
+   ```
+
+   Use `--live-output jsonl` only when another process will consume the six-field
+   frame stream. Live frames are provisional aubio YINFFT observations; the normal
+   artifacts and their `praat-ac` tracker are the completed interpretation.
+
    Praat is the default. Use `--tracker pyin` only when the user asks for pYIN or a second interpretation; write it to a separate output directory.
 
 4. Require exit status `0`, then require these artifacts:
