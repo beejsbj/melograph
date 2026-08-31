@@ -46,6 +46,7 @@ def test_full_output_names_only_multiple_playable_takes() -> None:
     assert "$TAKE_1:" in full
     assert "$TAKE_2:" in full
     assert "$TAKE_3:" not in full
+    assert "//" not in full
 
 
 def test_repl_url_embeds_one_runnable_take_as_base64() -> None:
