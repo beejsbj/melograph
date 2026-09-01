@@ -334,28 +334,32 @@ a { color: inherit; }
 .note-token i { position: absolute; top: 2px; right: 3px; color: var(--brass); font-size: 8px; font-style: normal; }
 
 .code-panel { min-height: 318px; display: flex; flex-direction: column; }
-.code-panel__toolbar { display: flex; min-height: 39px; border-bottom: 1px solid var(--line); }
+.code-panel__toolbar { display: flex; min-height: 39px; border-bottom: 1px solid var(--line); background: var(--surface); }
 .code-panel__scope { min-width: 0; flex: 1; align-content: center; overflow: hidden; padding: 0 var(--space-3); color: var(--ink-soft); font-family: var(--font-mono); font-size: 8px; letter-spacing: .08em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .pitch-output { display: flex; flex: none; border-left: 1px solid var(--line); }
 .pitch-output__option { min-width: 50px; padding: 0 var(--space-2); border: 0; border-right: 1px solid var(--line); background: var(--ground-deep); color: var(--muted); cursor: pointer; font-family: var(--font-mono); font-size: 8px; letter-spacing: .07em; text-transform: uppercase; }
 .pitch-output__option:last-child { border-right: 0; }
 .pitch-output__option:hover { color: var(--ink); }
 .pitch-output__option--active { background: var(--brass-wash); color: var(--brass-hi); box-shadow: inset 0 -2px var(--brass); }
-.code-panel__editor { min-height: 220px; flex: 1; overflow: auto; border-bottom: 1px solid var(--line); background: var(--ground-deep); }
+.code-panel__editor { min-height: 220px; flex: 1; overflow: auto; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, var(--ground-deep), color-mix(in srgb, var(--surface) 72%, var(--ground-deep))); transition: box-shadow var(--fast) var(--ease); }
 .code-panel__mount:empty { display: none; }
-.code-panel__editor:focus-within { box-shadow: inset 0 0 0 1px var(--brass-lo); }
-.code-panel__editor .cm-editor { min-height: 220px; background: transparent; color: var(--trace); font-family: var(--font-mono); font-size: 10px; line-height: 1.7; }
+.code-panel__editor:focus-within { box-shadow: inset 0 0 0 1px var(--brass-lo), inset 0 0 24px var(--brass-wash); }
+.code-panel__editor .cm-editor { min-height: 220px; background: transparent; color: var(--ink-soft); font-family: var(--font-mono); font-size: 11px; line-height: 1.75; }
+.code-panel__editor .cm-editor.cm-focused { outline: 0; }
 .code-panel__editor .cm-scroller { min-height: 220px; overflow: auto; font-family: inherit; }
-.code-panel__editor .cm-content { padding: var(--space-3) 0; caret-color: var(--brass-hi); }
+.code-panel__editor .cm-content { padding: var(--space-4) 0; caret-color: var(--brass-hi); }
 .code-panel__editor .cm-line { padding: 0 var(--space-4); }
-.code-panel__editor .cm-gutters { border-right: 1px solid var(--line); background: color-mix(in srgb, var(--ground-deep) 88%, black); color: var(--muted); }
+/* Keep Strudel's semantic highlighting, but pull its neon palette into Melograph's warm brass range. */
+.code-panel__editor .cm-line > span { filter: sepia(.62) saturate(.72) brightness(.96); }
+.code-panel__editor .cm-gutters { min-width: 34px; border-right: 1px solid var(--line); background: color-mix(in srgb, var(--ground-deep) 78%, var(--surface)); color: var(--muted); font-family: var(--font-mono); }
+.code-panel__editor .cm-lineNumbers .cm-gutterElement { min-width: 33px; padding: 0 9px 0 6px; color: var(--muted); font-size: 8px; text-align: right; }
 .code-panel__editor .cm-activeLine, .code-panel__editor .cm-activeLineGutter { background: var(--brass-wash); }
-.code-panel__editor .cm-cursor { border-left-color: var(--brass-hi); }
-.code-panel__editor .cm-selectionBackground, .code-panel__editor .cm-content ::selection { background: color-mix(in srgb, var(--brass) 26%, transparent) !important; }
+.code-panel__editor .cm-cursor, .code-panel__editor .cm-dropCursor { border-left-color: var(--brass-hi); filter: drop-shadow(0 0 3px var(--brass-glow)); }
+.code-panel__editor .cm-selectionBackground, .code-panel__editor .cm-content ::selection { background: color-mix(in srgb, var(--brass) 30%, transparent) !important; }
 .code-panel__fallback { min-height: 220px; display: flex; flex-direction: column; }
 .code-panel__fallback textarea { min-height: 174px; flex: 1; resize: vertical; padding: var(--space-3) var(--space-4); border: 0; outline: 0; background: transparent; color: var(--trace); font-family: var(--font-mono); font-size: 10px; line-height: 1.7; }
 .code-panel__fallback > div { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-top: 1px solid var(--line); color: var(--muted); font-family: var(--font-mono); font-size: 8px; }
-.code-panel__actions { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-3); }
+.code-panel__actions { display: flex; justify-content: flex-end; gap: var(--space-2); padding: var(--space-3); background: var(--surface); }
 .empty-copy { padding: var(--space-5); color: var(--muted); font-size: 12px; }
 
 .styleguide { min-height: 100vh; padding: var(--space-12) var(--space-8); }
