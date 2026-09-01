@@ -40,7 +40,7 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
         <ScopeSelector phrases={result.phrases} value={scope} onChange={selectScope} />
       </div>
 
-      <Panel eyebrow="pitch map / event interpretation" title="The voice before—and after—interpretation" className="panel--chart">
+      <Panel eyebrow="pitch map / event interpretation" title="The voice before—and after—interpretation" className="panel--chart panel--brass-frame">
         <PlaybackTransport
           key={view.key}
           result={{ ...result, phrases: view.phrases }}

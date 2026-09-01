@@ -10,7 +10,7 @@ export function RecordButton({ recording = false, disabled = false, onClick }: P
   return (
     <button
       type="button"
-      className={`record-button ${recording ? 'record-button--live' : ''}`}
+      className={`record-button ${recording ? 'record-button--live' : 'brass'}`}
       onClick={onClick}
       disabled={disabled}
       aria-label={recording ? 'Stop recording' : 'Start recording'}
