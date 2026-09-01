@@ -5,6 +5,7 @@ from itertools import pairwise
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from voice_to_strudel import audio
 from voice_to_strudel.live import AubioLiveTracker, LivePitchFrame
@@ -42,7 +43,6 @@ def test_stream_capture_writes_wav_and_exposes_same_pcm(monkeypatch, tmp_path: P
     class FakeProcess:
         def __init__(self) -> None:
             self.stdout = io.BytesIO(pcm)
-            self.stderr = io.BytesIO()
             self.returncode = 0
 
         def wait(self) -> int:
@@ -54,7 +54,13 @@ def test_stream_capture_writes_wav_and_exposes_same_pcm(monkeypatch, tmp_path: P
     received = []
     monkeypatch.setattr(audio, "require_ffmpeg", lambda: "ffmpeg")
     monkeypatch.setattr(audio, "microphone_input_options", lambda: [["-f", "fake", "-i", "mic"]])
-    monkeypatch.setattr(audio.subprocess, "Popen", lambda *args, **kwargs: FakeProcess())
+    stderr_sinks = []
+
+    def fake_popen(*args, **kwargs):
+        stderr_sinks.append(kwargs["stderr"])
+        return FakeProcess()
+
+    monkeypatch.setattr(audio.subprocess, "Popen", fake_popen)
 
     destination = tmp_path / "source.wav"
     audio.capture_microphone_stream(destination, 1.0, received.append, chunk_samples=2)
@@ -63,6 +69,33 @@ def test_stream_capture_writes_wav_and_exposes_same_pcm(monkeypatch, tmp_path: P
     exposed = np.concatenate(received)
     assert np.allclose(captured.samples, exposed)
     assert np.allclose(exposed, np.asarray([0, 0.25, -0.25, 0.5]))
+    assert stderr_sinks[0] is not audio.subprocess.PIPE
+
+
+def test_stream_capture_reports_stderr_from_nonblocking_file(monkeypatch, tmp_path: Path) -> None:
+    diagnostic = b"device unavailable\n" * 10_000
+
+    class FakeProcess:
+        def __init__(self, stderr) -> None:
+            self.stdout = io.BytesIO()
+            stderr.write(diagnostic)
+
+        def wait(self) -> int:
+            return 1
+
+        def poll(self) -> int:
+            return 1
+
+    monkeypatch.setattr(audio, "require_ffmpeg", lambda: "ffmpeg")
+    monkeypatch.setattr(audio, "microphone_input_options", lambda: [["-f", "fake", "-i", "mic"]])
+    monkeypatch.setattr(
+        audio.subprocess,
+        "Popen",
+        lambda *args, **kwargs: FakeProcess(kwargs["stderr"]),
+    )
+
+    with pytest.raises(audio.AudioError, match="device unavailable"):
+        audio.capture_microphone_stream(tmp_path / "source.wav", 1.0, lambda _: None)
 
 
 def test_live_frame_contract_keeps_unvoiced_values_null() -> None:
