@@ -85,15 +85,13 @@ describe('Strudel playback boundary', () => {
     expect(stop).toHaveBeenCalledOnce();
   });
 
-  it('exposes the scheduler clock and maps it across the selected loop', async () => {
-    const { createStrudelPlayer, loopRangeTime } = await import('./strudelPlayback');
+  it('exposes the scheduler clock', async () => {
+    const { createStrudelPlayer } = await import('./strudelPlayback');
     const player = await createStrudelPlayer();
     audioContext.currentTime = 14.75;
 
     expect(player.clockSeconds()).toBe(14.75);
     await expect(player.play('note("C4")')).resolves.toBe(14.75);
-    expect(loopRangeTime(player.clockSeconds(), 10, 2, 5)).toBe(3.75);
-    expect(loopRangeTime(20, 10, 7, 7)).toBe(7);
   });
 
   it('connects evaluated source locations and scheduler frames to one visual target', async () => {

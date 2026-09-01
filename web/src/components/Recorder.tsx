@@ -51,16 +51,16 @@ export function Recorder({
   }, [recording]);
 
   useEffect(() => {
-    if (elapsed >= MAX_SECONDS && recording) recorder.current?.stop();
+    if (elapsed >= MAX_SECONDS && recording) stop();
   }, [elapsed, recording]);
 
   useEffect(() => () => {
-    captureGeneration.current += 1;
-    stream.current?.getTracks().forEach((track) => track.stop());
-    void monitor.current?.stop();
+    void releaseCapture(stream.current, recorder.current, false);
   }, []);
 
   async function start() {
+    let acquired: MediaStream | null = null;
+    let activeRecorder: MediaRecorder | null = null;
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
         throw new Error('This browser does not expose microphone recording. Use an audio file instead.');
@@ -68,6 +68,7 @@ export function Recorder({
       const media = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: false },
       });
+      acquired = media;
       stream.current = media;
       const generation = captureGeneration.current + 1;
       captureGeneration.current = generation;
@@ -75,17 +76,14 @@ export function Recorder({
       elapsedRef.current = 0;
       setElapsed(0);
       const next = new MediaRecorder(media);
+      activeRecorder = next;
       next.ondataavailable = (event) => event.data.size && chunks.current.push(event.data);
       next.onstop = () => {
-        captureGeneration.current += 1;
-        void monitor.current?.stop();
-        monitor.current = null;
+        if (captureGeneration.current !== generation) return;
         const blob = new Blob(chunks.current, { type: next.mimeType });
-        media.getTracks().forEach((track) => track.stop());
-        stream.current = null;
-        setRecording(false);
-        onRecordingChange?.(false);
-        onAudio(blob, `mic take · ${elapsedRef.current.toFixed(1)}s`);
+        void releaseCapture(media, next).then(() => {
+          onAudio(blob, `mic take · ${elapsedRef.current.toFixed(1)}s`);
+        });
       };
       recorder.current = next;
       next.start();
@@ -102,13 +100,63 @@ export function Recorder({
         onLiveError?.(error instanceof Error ? error.message : 'Live pitch preview could not start.');
       }
     } catch (error) {
-      onRecordingChange?.(false);
+      if (acquired) {
+        await releaseCapture(acquired, activeRecorder);
+      } else {
+        setRecording(false);
+        onRecordingChange?.(false);
+      }
       onError?.(error instanceof Error ? error.message : 'Microphone access failed.');
     }
   }
 
   function stop() {
-    recorder.current?.stop();
+    const active = recorder.current;
+    if (!active || !recorderIsActive(active)) return;
+    try {
+      active.stop();
+    } catch (error) {
+      if (!recorderIsActive(active)) return;
+      void releaseCapture(stream.current, active, false);
+      onError?.(error instanceof Error ? error.message : 'Microphone recording could not stop.');
+    }
+  }
+
+  async function releaseCapture(
+    media: MediaStream | null,
+    active: MediaRecorder | null,
+    notify = true,
+  ) {
+    captureGeneration.current += 1;
+    if (recorder.current === active) recorder.current = null;
+    if (stream.current === media) stream.current = null;
+
+    if (active && recorderIsActive(active)) {
+      try {
+        active.stop();
+      } catch {
+        // Stopping a recorder that has just transitioned to inactive is harmless.
+      }
+    }
+    for (const track of media?.getTracks() ?? []) {
+      try {
+        track.stop();
+      } catch {
+        // Keep releasing the remaining tracks if one browser implementation rejects stop().
+      }
+    }
+    const activeMonitor = monitor.current;
+    monitor.current = null;
+    await activeMonitor?.stop().catch(() => undefined);
+    chunks.current = [];
+    if (notify) {
+      setRecording(false);
+      onRecordingChange?.(false);
+    }
+  }
+
+  function recorderIsActive(active: MediaRecorder) {
+    return active.state !== 'inactive';
   }
 
   return (

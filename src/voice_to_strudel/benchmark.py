@@ -98,7 +98,7 @@ def write_benchmark_audition(wav: Path, output_dir: Path) -> None:
         )
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<title>Voice to Strudel tracker audition</title><style>
+<title>Melograph tracker audition</title><style>
 body{{font:16px/1.5 system-ui,sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem;background:#111;color:#eee}}
 section{{border:1px solid #444;border-radius:12px;padding:1rem;margin:1rem 0;background:#191919}}
 label{{display:grid;grid-template-columns:10rem 1fr;align-items:center;margin:.7rem 0}} audio{{width:100%}}

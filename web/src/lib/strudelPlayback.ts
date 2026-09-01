@@ -89,12 +89,6 @@ export async function createStrudelPlayer(visuals: StrudelVisualCallbacks = {}):
   };
 }
 
-export function loopRangeTime(clockSeconds: number, startedAt: number, rangeStart: number, rangeEnd: number) {
-  const duration = rangeEnd - rangeStart;
-  if (duration <= 0) return rangeStart;
-  return rangeStart + Math.max(0, clockSeconds - startedAt) % duration;
-}
-
 const DEFAULT_CPS = .5;
 const TICKS_PER_SECOND = 100;
 
