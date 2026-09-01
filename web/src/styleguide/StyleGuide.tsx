@@ -48,11 +48,11 @@ export function StyleGuide() {
       <Panel eyebrow="brass finish variants" title="One metal, four readings">
         <div className="brass-variant-grid">
           <div className="brass-variant brass-variant--flat"><span>flat</span><small>--brass</small></div>
-          <div className="brass brass-variant"><span>sheen</span><small>--brass-fill + --brass-sheen</small></div>
+          <div className="brass brass-variant"><span>sheen</span><small>6.5s reflected-light sweep</small></div>
           <div className="brass-variant brass-variant--flat brass-variant--glow"><span>glow</span><small>--shadow-glow-brass</small></div>
           <div className="brass brass-variant brass-variant--glow"><span>sheen + glow</span><small>finish + halo</small></div>
         </div>
-        <p className="brass-variant-note">Hover the finished samples: sheen is an interaction response, while the gradient and structural edge remain still. The application reserves the full finish for capture, primary output, selected controls, and instrument-like frames.</p>
+        <p className="brass-variant-note">On fine-pointer hover, the Emotitone sweep travels slowly across the metal, rests, then repeats only while intent remains. The gradient and structural edge stay still. Reduced-motion and touch surfaces keep the finish static. The application reserves the full finish for capture, primary output, selected controls, and instrument-like frames.</p>
       </Panel>
       <Panel eyebrow="primitives" title="Controls and state">
         <div className="specimen-row">

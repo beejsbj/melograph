@@ -54,8 +54,9 @@
     0 0 0 9px var(--brass-wash),
     0 0 14px rgba(224,169,58,.45);
   --shadow-glow-brass: 0 0 14px rgba(224,169,58,.45);
-  --dur-brass-sheen: 240ms;
-  --ease-brass-sheen: ease;
+  --dur-brass-sheen: 6.5s;
+  --dur-brass-lift: 180ms;
+  --ease-brass-sheen: cubic-bezier(.55,.05,.45,.95);
   --font-display: 'Space Grotesk', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
   --radius-xs: 3px;
@@ -112,14 +113,13 @@ a { color: inherit; }
   pointer-events: none;
   mix-blend-mode: screen;
   opacity: 0;
-  transform: translateX(-65%);
+  background-position: -60% 0;
   z-index: 1;
 }
 .brass > * { position: relative; z-index: 2; }
 @keyframes brass-sheen {
-  0% { opacity: 0; transform: translateX(-65%); }
-  18%, 78% { opacity: 1; }
-  100% { opacity: 0; transform: translateX(65%); }
+  0% { background-position: -60% 0; }
+  55%, 100% { background-position: 160% 0; }
 }
 .brass-text, .eyebrow, .wordmark span, .process-item__number, .ledger-take__meta span, .pitch-output__option--active span, .scope-selector__option--active span, .audition__mode--active span, .live-pitch header span {
   background: var(--brass-fill);
@@ -131,8 +131,8 @@ a { color: inherit; }
 
 @media (hover: hover) and (pointer: fine) {
   .brass:hover:not(:disabled)::after {
-    animation: brass-sheen var(--dur-brass-sheen) var(--ease-brass-sheen) both;
-    will-change: transform, opacity;
+    opacity: 1;
+    animation: brass-sheen var(--dur-brass-sheen) var(--ease-brass-sheen) infinite;
   }
 }
 
@@ -185,7 +185,7 @@ a { color: inherit; }
 .button:hover:not(:disabled) { border-color: var(--brass); color: var(--ink); transform: translateY(-1px); }
 .button:active:not(:disabled) { transform: translateY(0); }
 .button:focus-visible, .record-button:focus-visible, .scope-selector__option:focus-visible, .pitch-output__option:focus-visible, .audition__mode:focus-visible, .audition__restart:focus-visible, .audition input[type='range']:focus-visible { outline: 2px solid var(--brass-hi); outline-offset: 3px; }
-.button--brass { border-color: var(--brass-lo); color: var(--brass-edge); font-weight: 600; transition-duration: var(--dur-brass-sheen); }
+.button--brass { border-color: var(--brass-lo); color: var(--brass-edge); font-weight: 600; transition-duration: var(--dur-brass-lift); }
 .button--brass:hover:not(:disabled) { background: var(--brass-fill); color: var(--brass-edge); box-shadow: var(--shadow-brass-hover); }
 .button--danger { border-color: var(--danger); color: var(--danger); }
 .button:disabled { cursor: not-allowed; opacity: .4; }
@@ -195,15 +195,21 @@ a { color: inherit; }
 .status-chip--ready { color: var(--success); }
 
 .recorder { display: flex; flex-direction: column; align-items: center; }
-.record-button { position: relative; width: 132px; height: 132px; display: grid; place-items: center; margin: var(--space-4) auto var(--space-5); border: 1px solid var(--brass-lo); border-radius: 50%; color: var(--brass-edge); cursor: pointer; transition: transform var(--dur-brass-sheen) ease, box-shadow var(--dur-brass-sheen) ease; }
-.record-button:active:not(:disabled) { transform: translateY(0) scale(.985); }
+.record-button { position: relative; width: 132px; height: 132px; display: grid; place-items: center; margin: var(--space-4) auto var(--space-5); padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--brass-edge); cursor: pointer; }
+.record-button__face { position: absolute; inset: 0; display: grid; place-items: center; border: 1px solid var(--brass-lo); border-radius: inherit; transition: transform var(--dur-brass-lift) var(--ease), box-shadow var(--dur-brass-lift) var(--ease); }
 .record-button:disabled { cursor: wait; opacity: .45; }
 .record-button__orbit { position: absolute; inset: 9px; border: 1px dashed var(--line-strong); border-radius: inherit; }
-.record-button--live { background: var(--danger); border-color: var(--danger); color: var(--ground-deep); animation: breathe 1.4s var(--ease) infinite; }
+.record-button--live .record-button__face { border-color: var(--danger); background: var(--danger); color: var(--ground-deep); animation: breathe 1.4s var(--ease) infinite; }
 .record-button--live .record-button__orbit { border-color: var(--ground-deep); animation: rotate 5s linear infinite; }
 @media (hover: hover) and (pointer: fine) {
-  .record-button:hover:not(:disabled) { transform: translateY(-2px) scale(1.025); box-shadow: var(--shadow-brass-hover); }
+  .record-button:hover:not(:disabled) .record-button__face { transform: translateY(-2px) scale(1.025); box-shadow: var(--shadow-brass-hover); }
+  .record-button:hover:not(:disabled) .record-button__face.brass::after {
+    opacity: 1;
+    animation: brass-sheen var(--dur-brass-sheen) var(--ease-brass-sheen) infinite;
+  }
 }
+.record-button:disabled .record-button__face.brass::after { opacity: 0; animation: none; }
+.record-button:active:not(:disabled) .record-button__face { transform: translateY(0) scale(.985); transition-duration: 100ms; }
 @keyframes breathe { 50% { box-shadow: 0 0 0 11px var(--danger-wash); } }
 @keyframes rotate { to { transform: rotate(360deg); } }
 .recorder__readout { text-align: center; }
@@ -423,6 +429,6 @@ a { color: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-  .brass:hover:not(:disabled)::after { animation: none; }
-  .record-button:hover:not(:disabled), .button:hover:not(:disabled) { transform: none; }
+  .brass:hover:not(:disabled)::after { opacity: 0; animation: none; }
+  .record-button:hover:not(:disabled) .record-button__face, .button:hover:not(:disabled) { transform: none; }
 }
