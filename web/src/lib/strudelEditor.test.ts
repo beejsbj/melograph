@@ -23,7 +23,17 @@ function fakeEditor() {
     onChange = options.onChange;
     return view;
   });
-  return { contentDOM, destroy, factory, input(next: string) { code = next; onChange?.({ docChanged: true, state: { doc } }); } };
+  const updateMiniLocations = vi.fn();
+  const highlightMiniLocations = vi.fn();
+  return {
+    contentDOM,
+    destroy,
+    factory,
+    updateMiniLocations,
+    highlightMiniLocations,
+    loader: async () => ({ initEditor: factory, updateMiniLocations, highlightMiniLocations }),
+    input(next: string) { code = next; onChange?.({ docChanged: true, state: { doc } }); },
+  };
 }
 
 describe('Strudel editor synchronization', () => {
@@ -36,7 +46,7 @@ describe('Strudel editor synchronization', () => {
       'note("C4")',
       onCodeChange,
       'Editable Strudel code using notes',
-      async () => ({ initEditor: editor.factory }),
+      editor.loader,
     );
 
     editor.input('note("D4")');
@@ -50,6 +60,22 @@ describe('Strudel editor synchronization', () => {
     expect(editor.contentDOM.getAttribute('aria-label')).toBe('Editable Strudel code using midi');
   });
 
+  it('applies scheduler locations and active haps to the mounted editor', async () => {
+    const root = document.createElement('div');
+    const editor = fakeEditor();
+    const handle = await mountStrudelEditor(root, 'note("C4")', vi.fn(), 'Editable Strudel code', editor.loader);
+    const locations = [[6, 8]];
+    const haps = [{ value: 'C4' }];
+
+    handle.setPlaybackLocations(locations);
+    handle.highlightPlayback(1.25, haps);
+    handle.clearPlayback();
+
+    expect(editor.updateMiniLocations).toHaveBeenNthCalledWith(1, expect.anything(), locations);
+    expect(editor.highlightMiniLocations).toHaveBeenCalledWith(expect.anything(), 1.25, haps);
+    expect(editor.updateMiniLocations).toHaveBeenLastCalledWith(expect.anything(), []);
+  });
+
   it('destroys the CodeMirror view on unmount', async () => {
     const root = document.createElement('div');
     root.append(document.createElement('span'));
@@ -59,7 +85,7 @@ describe('Strudel editor synchronization', () => {
       '',
       vi.fn(),
       'Editable Strudel code using notes',
-      async () => ({ initEditor: editor.factory }),
+      editor.loader,
     );
 
     handle.destroy();

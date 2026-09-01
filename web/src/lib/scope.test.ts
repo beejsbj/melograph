@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AnalysisResult } from '../types';
-import { createScopeView, scopeCode } from './scope';
+import { createScopeView, scopeCode, strudelPlaybackRange } from './scope';
 
 const result = {
   schema_version: 1,
@@ -30,5 +30,12 @@ describe('analysis scope', () => {
   it('selects matching full or take code in either pitch representation', () => {
     expect(scopeCode(result, createScopeView(result, 'full'), 'notes')).toBe('full names');
     expect(scopeCode(result, createScopeView(result, 2), 'midi')).toBe('take two midi');
+  });
+
+  it('maps a single Strudel phrase to its audible interval instead of capture silence', () => {
+    const onePhrase = { ...result, phrases: [result.phrases[0]], takes: [result.takes[0]] };
+
+    expect(strudelPlaybackRange(createScopeView(onePhrase, 'full'))).toEqual({ startSeconds: .5, endSeconds: 1.5 });
+    expect(strudelPlaybackRange(createScopeView(result, 2))).toEqual({ startSeconds: 2, endSeconds: 3.5 });
   });
 });
