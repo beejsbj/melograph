@@ -18,6 +18,7 @@ interface Props {
   strudelEditorRef?: MutableRefObject<StrudelEditorHandle | null>;
   strudelLocationsRef?: MutableRefObject<unknown[] | null>;
   projectStrudelPlayheads?: boolean;
+  onStrudelEvaluated?: (code: string) => void;
 }
 
 const MODE_COPY: Record<PlaybackMode, string> = {
@@ -27,7 +28,7 @@ const MODE_COPY: Record<PlaybackMode, string> = {
   strudel: 'current editor code · loops independently',
 };
 
-export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rangeStart, rangeEnd, onModeChange, onTimeChange, strudelEditorRef, strudelLocationsRef, projectStrudelPlayheads = true }: Props) {
+export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rangeStart, rangeEnd, onModeChange, onTimeChange, strudelEditorRef, strudelLocationsRef, projectStrudelPlayheads = true, onStrudelEvaluated }: Props) {
   const [sourceUrl, setSourceUrl] = useState('');
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(rangeStart);
@@ -69,6 +70,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
   }, [sourceAudio]);
 
   useEffect(() => () => {
+    outputGenerationRef.current += 1;
     playingRef.current = false;
     if (rafRef.current !== null) window.cancelAnimationFrame(rafRef.current);
     audioRef.current?.pause();
@@ -224,6 +226,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
           player.stop();
           return;
         }
+        onStrudelEvaluated?.(strudelCode);
         activeStrudelPlayerRef.current = player;
       } else {
         const context = audioContext();

@@ -254,7 +254,7 @@ a { color: inherit; }
 
 .workspace { padding: var(--space-8); border-top: 1px solid var(--line); }
 .workspace__scopebar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); margin-bottom: var(--space-4); }
-.workspace__scope-copy strong { display: block; margin-top: var(--space-1); color: var(--ink-soft); font-family: var(--font-mono); font-size: 9px; font-weight: 500; }
+.workspace__scope-copy h1 { display: block; margin: var(--space-1) 0 0; color: var(--ink-soft); font-family: var(--font-mono); font-size: 9px; font-weight: 500; }
 .scope-selector { display: flex; max-width: min(100%, 720px); overflow-x: auto; border: 1px solid transparent; border-radius: var(--radius-xs); background: linear-gradient(var(--ground-deep), var(--ground-deep)) padding-box, var(--brass-fill) border-box; }
 .scope-selector__option { flex: none; min-height: 36px; padding: 0 var(--space-4); border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; font-family: var(--font-mono); font-size: 8px; letter-spacing: .08em; text-transform: uppercase; transition: color var(--fast) var(--ease), background var(--fast) var(--ease); }
 .scope-selector__option:last-child { border-right: 0; }

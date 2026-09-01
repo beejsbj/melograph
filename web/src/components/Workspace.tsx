@@ -13,10 +13,12 @@ import type { StrudelEditorHandle } from '../lib/strudelEditor';
 export function Workspace({ result, sourceAudio, sourceLabel }: { result: AnalysisResult; sourceAudio: Blob; sourceLabel: string }) {
   const [scope, setScope] = useState<AnalysisScope>('full');
   const [mode, setMode] = useState<PlaybackMode>('voice');
+  const [strudelActivated, setStrudelActivated] = useState(false);
   const [playhead, setPlayhead] = useState<number | number[]>(0);
   const view = createScopeView(result, scope);
   const [strudelCode, setStrudelCode] = useState(result.strudel);
   const [strudelEdited, setStrudelEdited] = useState(false);
+  const [evaluatedStrudelCode, setEvaluatedStrudelCode] = useState<string | null>(null);
   const strudelEditorRef = useRef<StrudelEditorHandle | null>(null);
   const strudelLocationsRef = useRef<unknown[] | null>(null);
 
@@ -28,7 +30,13 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
   function selectScope(nextScope: AnalysisScope) {
     const nextView = createScopeView(result, nextScope);
     setScope(nextScope);
+    setEvaluatedStrudelCode(null);
     setPlayhead(nextView.startSeconds);
+  }
+
+  function selectMode(nextMode: PlaybackMode) {
+    if (nextMode === 'strudel') setStrudelActivated(true);
+    setMode(nextMode);
   }
 
   return (
@@ -36,7 +44,7 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
       <div className="workspace__scopebar">
         <div className="workspace__scope-copy">
           <span className="eyebrow">capture complete / {view.label}</span>
-          <strong>{sourceLabel} · {result.duration_seconds.toFixed(2)}s · Praat autocorrelation</strong>
+          <h1>{sourceLabel} · {result.duration_seconds.toFixed(2)}s · Praat autocorrelation</h1>
         </div>
         <ScopeSelector phrases={result.phrases} value={scope} onChange={selectScope} />
       </div>
@@ -50,11 +58,12 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
           mode={mode}
           rangeStart={view.startSeconds}
           rangeEnd={view.endSeconds}
-          onModeChange={setMode}
+          onModeChange={selectMode}
           onTimeChange={setPlayhead}
           strudelEditorRef={strudelEditorRef}
           strudelLocationsRef={strudelLocationsRef}
-          projectStrudelPlayheads={!strudelEdited}
+          projectStrudelPlayheads={canProjectStrudelPlayheads(strudelCode, evaluatedStrudelCode, strudelEdited)}
+          onStrudelEvaluated={setEvaluatedStrudelCode}
         />
         <div className={`analysis-grid${mode === 'strudel' ? ' analysis-grid--strudel' : ''}`}>
           <aside className="event-rail" aria-label="Event ledger">
@@ -69,19 +78,25 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
           />
           <aside className="strudel-dock" hidden={mode !== 'strudel'} aria-label="Editable Strudel">
             <header><span className="eyebrow">first-party output</span><strong>Editable Strudel</strong></header>
-            <CodePanel
-              scopeKey={view.key}
-              scopeLabel={view.label}
-              noteCode={scopeCode(result, view, 'notes')}
-              midiCode={scopeCode(result, view, 'midi')}
-              onActiveCodeChange={handleActiveCodeChange}
-              editorHandleRef={strudelEditorRef}
-              playbackLocationsRef={strudelLocationsRef}
-            />
+            {strudelActivated && (
+              <CodePanel
+                scopeKey={view.key}
+                scopeLabel={view.label}
+                noteCode={scopeCode(result, view, 'notes')}
+                midiCode={scopeCode(result, view, 'midi')}
+                onActiveCodeChange={handleActiveCodeChange}
+                editorHandleRef={strudelEditorRef}
+                playbackLocationsRef={strudelLocationsRef}
+              />
+            )}
           </aside>
         </div>
       </Panel>
       <p className="workspace__footnote">The contour is authoritative. Named notes and code are editable interpretations; slides and vibrato remain visible in the line.</p>
     </main>
   );
+}
+
+export function canProjectStrudelPlayheads(activeCode: string, evaluatedCode: string | null, edited: boolean) {
+  return !edited && activeCode === evaluatedCode;
 }

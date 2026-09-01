@@ -92,4 +92,42 @@ describe('CodePanel editor fallback', () => {
     expect(handle.setPlaybackLocations).toHaveBeenCalledWith([[4, 6]]);
     expect(editorHandleRef.current).toBe(handle);
   });
+
+  it('clears stale playback locations when pitch output changes the document', async () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    mounted.push(root);
+    const handle = {
+      code: vi.fn(() => 'note("C4")'),
+      sync: vi.fn(),
+      label: vi.fn(),
+      setPlaybackLocations: vi.fn(),
+      highlightPlayback: vi.fn(),
+      clearPlayback: vi.fn(),
+      destroy: vi.fn(),
+    };
+    mountEditor.mockResolvedValue(handle);
+    const playbackLocationsRef = { current: [[4, 6]] as unknown[] };
+
+    await act(async () => {
+      root.render(
+        <CodePanel
+          scopeKey="full"
+          scopeLabel="Full capture"
+          noteCode={'note("C4")'}
+          midiCode={'note("60")'}
+          playbackLocationsRef={playbackLocationsRef}
+        />,
+      );
+      await Promise.resolve();
+    });
+
+    const midiButton = [...host.querySelectorAll('button')].find((button) => button.textContent === 'midi');
+    await act(async () => midiButton?.click());
+
+    expect(playbackLocationsRef.current).toEqual([]);
+    expect(handle.clearPlayback).toHaveBeenCalledOnce();
+    expect(handle.sync).toHaveBeenLastCalledWith('note("60")');
+  });
 });

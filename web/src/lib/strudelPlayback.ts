@@ -96,6 +96,12 @@ export function loopRangeTime(clockSeconds: number, startedAt: number, rangeStar
 }
 
 const DEFAULT_CPS = .5;
+const TICKS_PER_SECOND = 100;
+
+export function strudelTick(seconds: number) {
+  const roundingNudge = Number.EPSILON * Math.max(1, Math.abs(seconds));
+  return Math.floor((seconds + roundingNudge) * TICKS_PER_SECOND + .5);
+}
 
 export function strudelPlayheadTimes(cycle: number, phrases: Array<{
   start_seconds: number;
@@ -105,7 +111,7 @@ export function strudelPlayheadTimes(cycle: number, phrases: Array<{
   return phrases
     .filter((phrase) => phrase.events.some((event) => event.type === 'note' && event.midi !== undefined))
     .map((phrase) => {
-      const duration = Math.max(0, phrase.end_seconds - phrase.start_seconds);
+      const duration = Math.max(0, strudelTick(phrase.end_seconds) - strudelTick(phrase.start_seconds)) / TICKS_PER_SECOND;
       const period = duration * DEFAULT_CPS;
       if (period <= 0) return phrase.start_seconds;
       const phase = ((cycle % period) + period) % period;

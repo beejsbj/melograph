@@ -115,7 +115,7 @@ describe('Strudel playback boundary', () => {
   });
 
   it('projects scheduler cycles into each independently looping take', async () => {
-    const { projectedStrudelPlayheadTimes, strudelPlayheadTimes } = await import('./strudelPlayback');
+    const { projectedStrudelPlayheadTimes, strudelPlayheadTimes, strudelTick } = await import('./strudelPlayback');
     const phrases = [
       { start_seconds: .5, end_seconds: 1.5, events: [{ type: 'note', midi: 60 }] },
       { start_seconds: 2, end_seconds: 4, events: [{ type: 'note', midi: 64 }] },
@@ -124,5 +124,11 @@ describe('Strudel playback boundary', () => {
 
     expect(strudelPlayheadTimes(.75, phrases)).toEqual([1, 3.5]);
     expect(projectedStrudelPlayheadTimes(.75, phrases, false)).toEqual([]);
+    expect(strudelTick(.504)).toBe(50);
+    expect(strudelTick(1.005)).toBe(101);
+    expect(strudelTick(1.506)).toBe(151);
+    expect(strudelPlayheadTimes(.505, [
+      { start_seconds: .504, end_seconds: 1.506, events: [{ type: 'note', midi: 60 }] },
+    ])).toEqual([.504]);
   });
 });

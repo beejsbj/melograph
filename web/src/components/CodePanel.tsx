@@ -30,6 +30,7 @@ export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCo
   const editKeyRef = useRef(editKey);
   const codeRef = useRef(code);
   const pitchOutputRef = useRef(pitchOutput);
+  const previousCodeRef = useRef(code);
   editKeyRef.current = editKey;
   codeRef.current = code;
   pitchOutputRef.current = pitchOutput;
@@ -62,7 +63,14 @@ export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCo
       editorRef.current = null;
     };
   }, [editorAttempt]);
-  useEffect(() => editorRef.current?.sync(code), [code]);
+  useEffect(() => {
+    if (previousCodeRef.current !== code) {
+      previousCodeRef.current = code;
+      if (playbackLocationsRef) playbackLocationsRef.current = [];
+      editorRef.current?.clearPlayback();
+    }
+    editorRef.current?.sync(code);
+  }, [code, playbackLocationsRef]);
   useEffect(() => editorRef.current?.label(`Editable Strudel code using ${pitchOutput}`), [pitchOutput]);
   const replUrl = useMemo(() => encodeStrudelUrl(code), [code]);
 
