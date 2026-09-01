@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@strudel/codemirror": "1.2.2",
     "@strudel/core": "1.2.2",
     "@strudel/mini": "1.2.2",
     "@strudel/tonal": "1.2.2",

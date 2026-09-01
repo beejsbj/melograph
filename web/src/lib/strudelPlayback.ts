@@ -1,6 +1,7 @@
 export interface StrudelPlayer {
-  play(code: string): Promise<void>;
+  play(code: string): Promise<number>;
   stop(): void;
+  clockSeconds(): number;
 }
 
 type StrudelModules = Awaited<ReturnType<typeof importStrudelModules>>;
@@ -48,11 +49,23 @@ export async function createStrudelPlayer(): Promise<StrudelPlayer> {
       const pattern = await engine.evaluate(code, true, true);
       if (evaluationError) throw toError(evaluationError);
       if (!pattern) throw new Error('Strudel did not produce a playable pattern.');
+      // evaluate() resolves immediately after the scheduler accepts the pattern.
+      // This clock sample is the closest public boundary to audible loop start.
+      return webaudio.getAudioContext().currentTime;
     },
     stop() {
       engine.stop();
     },
+    clockSeconds() {
+      return webaudio.getAudioContext().currentTime;
+    },
   };
+}
+
+export function loopRangeTime(clockSeconds: number, startedAt: number, rangeStart: number, rangeEnd: number) {
+  const duration = rangeEnd - rangeStart;
+  if (duration <= 0) return rangeStart;
+  return rangeStart + Math.max(0, clockSeconds - startedAt) % duration;
 }
 
 async function importStrudelModules() {

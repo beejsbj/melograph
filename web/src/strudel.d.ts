@@ -16,6 +16,14 @@ declare module '@strudel/core' {
 declare module '@strudel/mini';
 declare module '@strudel/tonal';
 
+declare module '@strudel/codemirror' {
+  export function initEditor(options: {
+    initialCode?: string;
+    onChange(update: unknown): void;
+    root: HTMLElement;
+  }): unknown;
+}
+
 declare module '@strudel/transpiler' {
   export const transpiler: unknown;
 }

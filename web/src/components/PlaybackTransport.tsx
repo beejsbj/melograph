@@ -1,7 +1,7 @@
 import { Pause, Play, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { formatPlaybackTime, type PlaybackMode, synthesizeContour, synthesizeNotes } from '../lib/playback';
-import { createStrudelPlayer, type StrudelPlayer } from '../lib/strudelPlayback';
+import { createStrudelPlayer, loopRangeTime, type StrudelPlayer } from '../lib/strudelPlayback';
 import type { AnalysisResult } from '../types';
 import { Button } from './Button';
 
@@ -34,7 +34,9 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const buffersRef = useRef(new Map<'contour' | 'notes', AudioBuffer>());
   const strudelPlayerRef = useRef<Promise<StrudelPlayer> | null>(null);
+  const activeStrudelPlayerRef = useRef<StrudelPlayer | null>(null);
   const synthStartedAtRef = useRef(0);
+  const strudelStartedAtRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const lastVisualUpdateRef = useRef(0);
   const outputGenerationRef = useRef(0);
@@ -96,7 +98,12 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
 
   function currentOutputTime() {
     if (modeRef.current === 'voice') return audioRef.current?.currentTime ?? timeRef.current;
-    if (modeRef.current === 'strudel') return 0;
+    if (modeRef.current === 'strudel') {
+      const player = activeStrudelPlayerRef.current;
+      return player
+        ? loopRangeTime(player.clockSeconds(), strudelStartedAtRef.current, rangeStart, rangeEnd)
+        : timeRef.current;
+    }
     const context = contextRef.current;
     return context ? context.currentTime - synthStartedAtRef.current : timeRef.current;
   }
@@ -104,7 +111,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
   function tick() {
     if (!playingRef.current) return;
     const next = currentOutputTime();
-    if (next >= rangeEnd) {
+    if (modeRef.current !== 'strudel' && next >= rangeEnd) {
       stopOutput();
       playingRef.current = false;
       setPlaying(false);
@@ -181,11 +188,13 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
         }
       } else if (selectedMode === 'strudel') {
         const player = await strudelPlayer();
-        await player.play(strudelCode);
+        const startedAt = await player.play(strudelCode);
         if (generation !== outputGenerationRef.current) {
           player.stop();
           return;
         }
+        activeStrudelPlayerRef.current = player;
+        strudelStartedAtRef.current = startedAt;
       } else {
         const context = audioContext();
         await context.resume();
@@ -199,7 +208,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
       }
       playingRef.current = true;
       setPlaying(true);
-      if (selectedMode !== 'strudel') rafRef.current = window.requestAnimationFrame(tick);
+      rafRef.current = window.requestAnimationFrame(tick);
     } catch (caught) {
       playingRef.current = false;
       setPlaying(false);
@@ -286,7 +295,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
         <button type="button" className="audition__restart" onClick={restart} aria-label="Return to start">
           <RotateCcw size={14} />
         </button>
-        <span className="audition__time">{mode === 'strudel' ? 'code' : formatPlaybackTime(time - rangeStart)}</span>
+        <span className="audition__time">{formatPlaybackTime(time - rangeStart)}</span>
         <input
           aria-label="Playback position"
           type="range"
@@ -298,7 +307,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
           onChange={(event) => seek(Number(event.target.value))}
           style={{ '--progress': `${rangeEnd > rangeStart ? (time - rangeStart) / (rangeEnd - rangeStart) * 100 : 0}%` } as React.CSSProperties}
         />
-        <span className="audition__time">{mode === 'strudel' ? 'loop' : formatPlaybackTime(rangeEnd - rangeStart)}</span>
+        <span className="audition__time">{formatPlaybackTime(rangeEnd - rangeStart)}</span>
       </div>
       {error && <p className="audition__error" role="alert">{error}</p>}
     </section>
