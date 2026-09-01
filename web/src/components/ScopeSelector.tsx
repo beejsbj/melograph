@@ -22,7 +22,7 @@ export function ScopeSelector({ phrases, value, onChange }: Props) {
           onClick={() => onChange(option.value)}
           key={option.value}
         >
-          {option.label}
+          <span>{option.label}</span>
         </button>
       ))}
     </div>

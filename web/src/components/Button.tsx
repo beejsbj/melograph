@@ -7,7 +7,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export function Button({ tone = 'quiet', icon, className = '', children, ...props }: Props) {
   return (
-    <button className={`button button--${tone} ${className}`} {...props}>
+    <button className={`button button--${tone}${tone === 'brass' ? ' brass' : ''} ${className}`} {...props}>
       {icon}
       <span>{children}</span>
     </button>

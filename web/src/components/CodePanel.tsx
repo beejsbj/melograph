@@ -40,7 +40,7 @@ export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCo
               onClick={() => setPitchOutput(output)}
               key={output}
             >
-              {output}
+              <span>{output}</span>
             </button>
           ))}
         </div>
@@ -53,7 +53,7 @@ export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCo
       />
       <div className="code-panel__actions">
         <Button icon={copied ? <Check size={14} /> : <Copy size={14} />} onClick={() => void copy()}>{copied ? 'copied' : 'copy'}</Button>
-        <a className="button button--brass" href={replUrl} target="_blank" rel="noreferrer">
+        <a className="button button--brass brass" href={replUrl} target="_blank" rel="noreferrer">
           <ExternalLink size={14} /><span>open in Strudel</span>
         </a>
       </div>

@@ -51,7 +51,7 @@ export function StyleGuide() {
           <div className="brass-variant brass-variant--flat brass-variant--glow"><span>glow</span><small>--shadow-glow-brass</small></div>
           <div className="brass brass-variant brass-variant--glow"><span>sheen + glow</span><small>finish + halo</small></div>
         </div>
-        <p className="brass-variant-note">The application uses the same family for its lit trace, primary capture action, active controls, and focus signal.</p>
+        <p className="brass-variant-note">Hover the finished samples: sheen is an interaction response, while the gradient and structural edge remain still. The application reserves the full finish for capture, primary output, selected controls, and instrument-like frames.</p>
       </Panel>
       <Panel eyebrow="primitives" title="Controls and state">
         <div className="specimen-row">
@@ -84,7 +84,7 @@ export function StyleGuide() {
           }))} />
         </div>
       </Panel>
-      <Panel eyebrow="hero composition" title="Contour with interpreted events">
+      <Panel eyebrow="hero composition" title="Contour with interpreted events" className="panel--brass-frame">
         <ContourChart result={specimen} />
       </Panel>
     </main>
