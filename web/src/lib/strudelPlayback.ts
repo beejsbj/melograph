@@ -2,6 +2,13 @@ export interface StrudelPlayer {
   play(code: string): Promise<number>;
   stop(): void;
   clockSeconds(): number;
+  cycle(): number;
+}
+
+export interface StrudelVisualCallbacks {
+  onLocations?(locations: unknown[]): void;
+  onFrame?(time: number, haps: unknown[]): void;
+  onClear?(): void;
 }
 
 type StrudelModules = Awaited<ReturnType<typeof importStrudelModules>>;
@@ -13,15 +20,30 @@ export function preloadStrudelPlayer() {
   return modulesPromise;
 }
 
-export async function createStrudelPlayer(): Promise<StrudelPlayer> {
-  const { core, mini, tonal, transpiler, webaudio } = await preloadStrudelPlayer();
+export async function createStrudelPlayer(visuals: StrudelVisualCallbacks = {}): Promise<StrudelPlayer> {
+  const { core, draw, mini, tonal, transpiler, webaudio } = await preloadStrudelPlayer();
   let evaluationError: unknown = null;
   let readyPromise: Promise<void> | null = null;
-  const engine = core.repl({
+  let engine: ReturnType<typeof core.repl>;
+  const drawer = new draw.Drawer((haps: unknown[], time: number) => {
+    visuals.onFrame?.(time, haps);
+  }, [0, 0]);
+  engine = core.repl({
     defaultOutput: webaudio.webaudioOutput,
     getTime: () => webaudio.getAudioContext().currentTime,
     transpiler: transpiler.transpiler,
     onEvalError: (error) => { evaluationError = error; },
+    onToggle: (started) => {
+      if (started) drawer.start(engine.scheduler);
+      else {
+        drawer.stop();
+        visuals.onClear?.();
+      }
+    },
+    afterEval: ({ meta }) => {
+      visuals.onLocations?.(meta?.miniLocations ?? []);
+      drawer.invalidate(engine.scheduler);
+    },
   });
 
   async function ensureReady() {
@@ -55,9 +77,14 @@ export async function createStrudelPlayer(): Promise<StrudelPlayer> {
     },
     stop() {
       engine.stop();
+      drawer.stop();
+      visuals.onClear?.();
     },
     clockSeconds() {
       return webaudio.getAudioContext().currentTime;
+    },
+    cycle() {
+      return engine.scheduler.now();
     },
   };
 }
@@ -68,15 +95,34 @@ export function loopRangeTime(clockSeconds: number, startedAt: number, rangeStar
   return rangeStart + Math.max(0, clockSeconds - startedAt) % duration;
 }
 
+const DEFAULT_CPS = .5;
+
+export function strudelPlayheadTimes(cycle: number, phrases: Array<{
+  start_seconds: number;
+  end_seconds: number;
+  events: Array<{ type: string; midi?: number }>;
+}>) {
+  return phrases
+    .filter((phrase) => phrase.events.some((event) => event.type === 'note' && event.midi !== undefined))
+    .map((phrase) => {
+      const duration = Math.max(0, phrase.end_seconds - phrase.start_seconds);
+      const period = duration * DEFAULT_CPS;
+      if (period <= 0) return phrase.start_seconds;
+      const phase = ((cycle % period) + period) % period;
+      return phrase.start_seconds + phase / DEFAULT_CPS;
+    });
+}
+
 async function importStrudelModules() {
-  const [core, mini, tonal, transpiler, webaudio] = await Promise.all([
+  const [core, draw, mini, tonal, transpiler, webaudio] = await Promise.all([
     import('@strudel/core'),
+    import('@strudel/draw'),
     import('@strudel/mini'),
     import('@strudel/tonal'),
     import('@strudel/transpiler'),
     import('@strudel/webaudio'),
   ]);
-  return { core, mini, tonal, transpiler, webaudio };
+  return { core, draw, mini, tonal, transpiler, webaudio };
 }
 
 function toError(value: unknown) {

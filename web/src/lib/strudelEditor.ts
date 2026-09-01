@@ -21,12 +21,19 @@ type EditorFactory = (options: {
   root: HTMLElement;
 }) => EditorViewLike;
 
-type EditorLoader = () => Promise<{ initEditor: EditorFactory }>;
+type EditorLoader = () => Promise<{
+  initEditor: EditorFactory;
+  updateMiniLocations(view: EditorViewLike, locations: unknown[]): void;
+  highlightMiniLocations(view: EditorViewLike, time: number, haps: unknown[]): void;
+}>;
 
 export interface StrudelEditorHandle {
   code(): string;
   sync(code: string): void;
   label(label: string): void;
+  setPlaybackLocations(locations: unknown[]): void;
+  highlightPlayback(time: number, haps: unknown[]): void;
+  clearPlayback(): void;
   destroy(): void;
 }
 
@@ -35,10 +42,10 @@ export async function mountStrudelEditor(
   initialCode: string,
   onCodeChange: (code: string) => void,
   label: string,
-  loadEditor: EditorLoader = () => import('@strudel/codemirror') as Promise<{ initEditor: EditorFactory }>,
+  loadEditor: EditorLoader = () => import('@strudel/codemirror') as unknown as ReturnType<EditorLoader>,
 ): Promise<StrudelEditorHandle> {
   let syncing = false;
-  const { initEditor } = await loadEditor();
+  const { initEditor, updateMiniLocations, highlightMiniLocations } = await loadEditor();
   const view = initEditor({
     initialCode,
     root,
@@ -53,6 +60,15 @@ export async function mountStrudelEditor(
     code: () => view.state.doc.toString(),
     label(nextLabel) {
       view.contentDOM?.setAttribute('aria-label', nextLabel);
+    },
+    setPlaybackLocations(locations) {
+      updateMiniLocations(view, locations);
+    },
+    highlightPlayback(time, haps) {
+      highlightMiniLocations(view, time, haps);
+    },
+    clearPlayback() {
+      updateMiniLocations(view, []);
     },
     sync(nextCode) {
       const current = view.state.doc.toString();

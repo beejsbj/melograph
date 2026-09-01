@@ -1,5 +1,5 @@
 import { Check, Copy, ExternalLink } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { mountStrudelEditor, type StrudelEditorHandle } from '../lib/strudelEditor';
 import { Button } from './Button';
 
@@ -11,9 +11,10 @@ interface Props {
   noteCode: string;
   midiCode: string;
   onActiveCodeChange?: (code: string) => void;
+  editorHandleRef?: MutableRefObject<StrudelEditorHandle | null>;
 }
 
-export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCodeChange }: Props) {
+export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCodeChange, editorHandleRef }: Props) {
   const [pitchOutput, setPitchOutput] = useState<PitchOutput>('notes');
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
@@ -41,12 +42,14 @@ export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCo
         return;
       }
       editorRef.current = editor;
+      if (editorHandleRef) editorHandleRef.current = editor;
       editor.sync(codeRef.current);
       editor.label(`Editable Strudel code using ${pitchOutputRef.current}`);
     });
     return () => {
       cancelled = true;
       editorRef.current?.destroy();
+      if (editorHandleRef) editorHandleRef.current = null;
       editorRef.current = null;
     };
   }, []);

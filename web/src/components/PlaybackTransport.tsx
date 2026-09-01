@@ -1,9 +1,10 @@
 import { Pause, Play, RotateCcw } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { formatPlaybackTime, type PlaybackMode, synthesizeContour, synthesizeNotes } from '../lib/playback';
-import { createStrudelPlayer, loopRangeTime, type StrudelPlayer } from '../lib/strudelPlayback';
+import { createStrudelPlayer, strudelPlayheadTimes, type StrudelPlayer } from '../lib/strudelPlayback';
 import type { AnalysisResult } from '../types';
 import { Button } from './Button';
+import type { StrudelEditorHandle } from '../lib/strudelEditor';
 
 interface Props {
   result: AnalysisResult;
@@ -13,7 +14,8 @@ interface Props {
   rangeStart: number;
   rangeEnd: number;
   onModeChange: (mode: PlaybackMode) => void;
-  onTimeChange?: (time: number) => void;
+  onTimeChange?: (time: number | number[]) => void;
+  strudelEditorRef?: MutableRefObject<StrudelEditorHandle | null>;
 }
 
 const MODE_COPY: Record<PlaybackMode, string> = {
@@ -23,7 +25,7 @@ const MODE_COPY: Record<PlaybackMode, string> = {
   strudel: 'current editor code · loops independently',
 };
 
-export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rangeStart, rangeEnd, onModeChange, onTimeChange }: Props) {
+export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rangeStart, rangeEnd, onModeChange, onTimeChange, strudelEditorRef }: Props) {
   const [sourceUrl, setSourceUrl] = useState('');
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(rangeStart);
@@ -36,7 +38,6 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
   const strudelPlayerRef = useRef<Promise<StrudelPlayer> | null>(null);
   const activeStrudelPlayerRef = useRef<StrudelPlayer | null>(null);
   const synthStartedAtRef = useRef(0);
-  const strudelStartedAtRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const lastVisualUpdateRef = useRef(0);
   const outputGenerationRef = useRef(0);
@@ -72,11 +73,11 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     void contextRef.current?.close();
   }, []);
 
-  function commitTime(next: number) {
+  function commitTime(next: number, playheads: number | number[] = next) {
     const bounded = Math.max(rangeStart, Math.min(rangeEnd, next));
     timeRef.current = bounded;
     setTime(bounded);
-    onTimeChangeRef.current?.(bounded);
+    onTimeChangeRef.current?.(playheads);
   }
 
   function stopOutput() {
@@ -100,9 +101,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     if (modeRef.current === 'voice') return audioRef.current?.currentTime ?? timeRef.current;
     if (modeRef.current === 'strudel') {
       const player = activeStrudelPlayerRef.current;
-      return player
-        ? loopRangeTime(player.clockSeconds(), strudelStartedAtRef.current, rangeStart, rangeEnd)
-        : timeRef.current;
+      return player ? strudelPlayheadTimes(player.cycle(), result.phrases)[0] ?? rangeStart : timeRef.current;
     }
     const context = contextRef.current;
     return context ? context.currentTime - synthStartedAtRef.current : timeRef.current;
@@ -121,7 +120,10 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     const now = performance.now();
     if (now - lastVisualUpdateRef.current >= 50) {
       lastVisualUpdateRef.current = now;
-      commitTime(next);
+      if (modeRef.current === 'strudel' && activeStrudelPlayerRef.current) {
+        const playheads = strudelPlayheadTimes(activeStrudelPlayerRef.current.cycle(), result.phrases);
+        commitTime(playheads[0] ?? rangeStart, playheads);
+      } else commitTime(next);
     }
     rafRef.current = window.requestAnimationFrame(tick);
   }
@@ -156,7 +158,11 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
   async function strudelPlayer() {
     if (!strudelPlayerRef.current) {
       setStrudelLoading(true);
-      strudelPlayerRef.current = createStrudelPlayer()
+      strudelPlayerRef.current = createStrudelPlayer({
+        onLocations: (locations) => strudelEditorRef?.current?.setPlaybackLocations(locations),
+        onFrame: (frameTime, haps) => strudelEditorRef?.current?.highlightPlayback(frameTime, haps),
+        onClear: () => strudelEditorRef?.current?.clearPlayback(),
+      })
         .then((player) => {
           setStrudelLoading(false);
           return player;
@@ -174,8 +180,11 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     stopOutput();
     const generation = outputGenerationRef.current;
     setError(null);
-    const start = selectedMode === 'strudel' || requestedTime >= rangeEnd - 0.01 ? rangeStart : requestedTime;
-    commitTime(start);
+    const initialStrudelPlayheads = selectedMode === 'strudel' ? strudelPlayheadTimes(0, result.phrases) : [];
+    const start = selectedMode === 'strudel'
+      ? initialStrudelPlayheads[0] ?? rangeStart
+      : requestedTime >= rangeEnd - 0.01 ? rangeStart : requestedTime;
+    commitTime(start, selectedMode === 'strudel' ? initialStrudelPlayheads : start);
     try {
       if (selectedMode === 'voice') {
         const audio = audioRef.current;
@@ -188,13 +197,12 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
         }
       } else if (selectedMode === 'strudel') {
         const player = await strudelPlayer();
-        const startedAt = await player.play(strudelCode);
+        await player.play(strudelCode);
         if (generation !== outputGenerationRef.current) {
           player.stop();
           return;
         }
         activeStrudelPlayerRef.current = player;
-        strudelStartedAtRef.current = startedAt;
       } else {
         const context = audioContext();
         await context.resume();
@@ -217,11 +225,14 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
   }
 
   function pause() {
-    const pausedAt = currentOutputTime();
+    const strudelPlayheads = modeRef.current === 'strudel' && activeStrudelPlayerRef.current
+      ? strudelPlayheadTimes(activeStrudelPlayerRef.current.cycle(), result.phrases)
+      : null;
+    const pausedAt = strudelPlayheads?.[0] ?? currentOutputTime();
     stopOutput();
     playingRef.current = false;
     setPlaying(false);
-    commitTime(pausedAt);
+    commitTime(pausedAt, strudelPlayheads ?? pausedAt);
   }
 
   function selectMode(nextMode: PlaybackMode) {
@@ -234,7 +245,8 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     modeRef.current = nextMode;
     onModeChange(nextMode);
     if (nextMode === 'strudel') {
-      commitTime(rangeStart);
+      const playheads = strudelPlayheadTimes(0, result.phrases);
+      commitTime(playheads[0] ?? rangeStart, playheads);
       void strudelPlayer().catch((caught) => {
         setError(caught instanceof Error ? caught.message : 'Strudel playback could not load.');
       });
@@ -247,7 +259,10 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     playingRef.current = false;
     setPlaying(false);
     if (audioRef.current) audioRef.current.currentTime = rangeStart;
-    commitTime(rangeStart);
+    if (modeRef.current === 'strudel') {
+      const playheads = strudelPlayheadTimes(0, result.phrases);
+      commitTime(playheads[0] ?? rangeStart, playheads);
+    } else commitTime(rangeStart);
   }
 
   function seek(next: number) {

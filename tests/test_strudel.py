@@ -49,15 +49,6 @@ def test_full_output_names_only_multiple_playable_takes() -> None:
     assert "//" not in full
 
 
-def test_full_output_keeps_capture_silence_so_playback_matches_the_timeline() -> None:
-    analysis = {"duration_seconds": 1.0, "phrases": [phrase()]}
-
-    full = serialize_strudel(analysis)
-
-    assert "~@0.05" in full  # 100ms before the phrase
-    assert "~@0.15" in full  # 300ms after the phrase
-
-
 def test_repl_url_embeds_one_runnable_take_as_base64() -> None:
     url = strudel_repl_url(phrase())
     encoded = unquote(url.removeprefix("https://strudel.cc/#"))

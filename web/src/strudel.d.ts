@@ -1,5 +1,6 @@
 declare module '@strudel/core' {
   interface ReplInstance {
+    scheduler: { now(): number };
     evaluate(code: string, autostart?: boolean, shouldHush?: boolean): Promise<unknown>;
     stop(): void;
   }
@@ -10,7 +11,18 @@ declare module '@strudel/core' {
     getTime: () => number;
     transpiler: unknown;
     onEvalError?: (error: unknown) => void;
+    onToggle?: (started: boolean) => void;
+    afterEval?: (options: { meta?: { miniLocations?: unknown[] } }) => void;
   }): ReplInstance;
+}
+
+declare module '@strudel/draw' {
+  export class Drawer {
+    constructor(onDraw: (haps: unknown[], time: number) => void, drawTime?: [number, number]);
+    start(scheduler: unknown): void;
+    stop(): void;
+    invalidate(scheduler: unknown): void;
+  }
 }
 
 declare module '@strudel/mini';
@@ -22,6 +34,8 @@ declare module '@strudel/codemirror' {
     onChange(update: unknown): void;
     root: HTMLElement;
   }): unknown;
+  export function updateMiniLocations(view: unknown, locations: unknown[]): void;
+  export function highlightMiniLocations(view: unknown, time: number, haps: unknown[]): void;
 }
 
 declare module '@strudel/transpiler' {
