@@ -1,10 +1,16 @@
 # Pilot benchmark
 
 Fixture: the 31.68-second, seven-take BJS-183 hum recording, decoded to mono
-22,050 Hz PCM WAV. Host: bjslab, Intel i7-6700HQ. Command:
+22,050 Hz PCM WAV. The source audio is deliberately not committed; use an
+authorized local copy as `user-hum.wav`. Host: bjslab, Intel i7-6700HQ.
+
+From a source checkout, prepare the optional fusion dependency, then run the
+benchmark and the separate Praat capture that supplies the browser comparison:
 
 ```bash
-uv run voice-to-strudel benchmark user-hum.wav --out out/benchmark.json --runs 7
+uv sync --extra fusion
+uv run melograph benchmark user-hum.wav --out out/benchmark.json --runs 7
+uv run melograph capture user-hum.wav --out out/capture
 ```
 
 Measured 2026-08-28 after one warm-up run. The timing includes Praat tracking,
@@ -48,6 +54,7 @@ reproducible harness emits its frame CSV, a Pitchy contour synth, and a three-wa
 source/Praat/Pitchy audition page:
 
 ```bash
+npm --prefix web ci
 cd web
 node scripts/pilot-live-pitch.mjs \
   ../user-hum.wav \

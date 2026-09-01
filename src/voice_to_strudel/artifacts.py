@@ -188,14 +188,14 @@ def write_audition(
         </section>""")
     page = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
-<title>Voice to Strudel audition</title>
+<title>Melograph audition</title>
 <style>
 body{{font:16px/1.5 system-ui,sans-serif;max-width:820px;margin:2rem auto;padding:0 1rem;background:#111;color:#eee}}
 section{{border:1px solid #444;border-radius:12px;padding:1rem;margin:1rem 0;background:#191919}}
 label{{display:grid;grid-template-columns:6rem 1fr;align-items:center;margin:.7rem 0}} audio{{width:100%}}
 code{{color:#b8f7ce}} a{{color:#9cc9ff}}
 </style></head><body>
-<h1>Voice to Strudel A/B</h1>
+<h1>Melograph A/B</h1>
 <p>Listen before accepting. Edit <a href="analysis.json">analysis.json</a>, then run <code>melograph render analysis.json</code>.</p>
 {''.join(cards) if cards else '<p>No voiced phrases detected.</p>'}
 </body></html>"""
