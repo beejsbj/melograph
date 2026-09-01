@@ -4,6 +4,7 @@ import io
 import platform
 import shutil
 import subprocess
+import tempfile
 import wave
 from collections.abc import Callable
 from pathlib import Path
@@ -72,37 +73,39 @@ def capture_microphone_stream(
         command = _microphone_command(ffmpeg, input_args, seconds, sample_rate, "pipe:1", raw=True)
         process: subprocess.Popen[bytes] | None = None
         exposed_audio = False
-        try:
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            if process.stdout is None or process.stderr is None:  # pragma: no cover - subprocess contract
-                raise AudioError("microphone capture did not expose an audio pipe")
-            with wave.open(str(destination), "wb") as handle:
-                handle.setnchannels(1)
-                handle.setsampwidth(2)
-                handle.setframerate(sample_rate)
-                carry = b""
-                while payload := process.stdout.read(chunk_samples * 2):
-                    payload = carry + payload
-                    usable = len(payload) - (len(payload) % 2)
-                    pcm, carry = payload[:usable], payload[usable:]
-                    if not pcm:
-                        continue
-                    handle.writeframesraw(pcm)
-                    samples = np.frombuffer(pcm, dtype="<i2").astype(np.float64) / 32768.0
-                    exposed_audio = True
-                    on_samples(samples)
-            return_code = process.wait()
-            if return_code:
-                detail = process.stderr.read().decode(errors="replace").strip() or f"exit {return_code}"
-                raise AudioError(f"microphone capture failed: {detail}")
-            return
-        except (OSError, AudioError) as error:
-            failures.append(str(error))
-            if process is not None and process.poll() is None:
-                process.kill()
-                process.wait()
-            if exposed_audio:
-                raise AudioError(str(error)) from error
+        with tempfile.TemporaryFile() as stderr:
+            try:
+                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=stderr)
+                if process.stdout is None:  # pragma: no cover - subprocess contract
+                    raise AudioError("microphone capture did not expose an audio pipe")
+                with wave.open(str(destination), "wb") as handle:
+                    handle.setnchannels(1)
+                    handle.setsampwidth(2)
+                    handle.setframerate(sample_rate)
+                    carry = b""
+                    while payload := process.stdout.read(chunk_samples * 2):
+                        payload = carry + payload
+                        usable = len(payload) - (len(payload) % 2)
+                        pcm, carry = payload[:usable], payload[usable:]
+                        if not pcm:
+                            continue
+                        handle.writeframesraw(pcm)
+                        samples = np.frombuffer(pcm, dtype="<i2").astype(np.float64) / 32768.0
+                        exposed_audio = True
+                        on_samples(samples)
+                return_code = process.wait()
+                if return_code:
+                    stderr.seek(0)
+                    detail = stderr.read().decode(errors="replace").strip() or f"exit {return_code}"
+                    raise AudioError(f"microphone capture failed: {detail}")
+                return
+            except (OSError, AudioError) as error:
+                failures.append(str(error))
+                if process is not None and process.poll() is None:
+                    process.kill()
+                    process.wait()
+                if exposed_audio:
+                    raise AudioError(str(error)) from error
     destination.unlink(missing_ok=True)
     raise AudioError("microphone capture failed through every available backend: " + " | ".join(failures))
 

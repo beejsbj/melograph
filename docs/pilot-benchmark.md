@@ -41,3 +41,28 @@ than Praat, but the lower cost makes it useful as a causal display while audio i
 still arriving. It is therefore a provisional live tracker, not another final
 interpretation: CLI capture shows its frames immediately, then runs Praat over
 the completed `source.wav` for every durable artifact.
+
+The browser lane was run over that same decoded fixture with the production
+`LiveMpmTracker` (Pitchy MPM, 2,048-sample causal frames) on 2026-09-01. The
+reproducible harness emits its frame CSV, a Pitchy contour synth, and a three-way
+source/Praat/Pitchy audition page:
+
+```bash
+cd web
+node scripts/pilot-live-pitch.mjs \
+  ../user-hum.wav \
+  ../out/capture/contour.csv \
+  ../out/capture/contour-synth.wav \
+  ../out/pitchy-pilot
+```
+
+Pitchy voiced 188 of 341 frames (55.13%) and retained the fixture's seven phrase
+groups at the product's 650 ms phrase-gap threshold. All 188 voiced frames had a
+nearby voiced Praat reference: median absolute disagreement was 5.8 cents, three
+frames exceeded 80 cents, and none exceeded 600 cents. Listening through the
+generated source → Praat → Pitchy
+surface preserved the seven sung ideas and their melody without an audible
+octave jump; Pitchy's 92.9 ms causal blocks make entrances and releases coarser
+than the final Praat synth. This is acceptable for a temporary visual guide, not
+as a replacement for final analysis. A live microphone acceptance run the same
+day was also reported as working correctly.
