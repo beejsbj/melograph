@@ -113,6 +113,14 @@ export function strudelPlayheadTimes(cycle: number, phrases: Array<{
     });
 }
 
+export function projectedStrudelPlayheadTimes(
+  cycle: number,
+  phrases: Parameters<typeof strudelPlayheadTimes>[1],
+  generatedTiming: boolean,
+) {
+  return generatedTiming ? strudelPlayheadTimes(cycle, phrases) : [];
+}
+
 async function importStrudelModules() {
   const [core, draw, mini, tonal, transpiler, webaudio] = await Promise.all([
     import('@strudel/core'),

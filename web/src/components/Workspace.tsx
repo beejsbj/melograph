@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createScopeView, scopeCode, type AnalysisScope } from '../lib/scope';
 import type { PlaybackMode } from '../lib/playback';
 import type { AnalysisResult } from '../types';
@@ -16,7 +16,13 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
   const [playhead, setPlayhead] = useState<number | number[]>(0);
   const view = createScopeView(result, scope);
   const [strudelCode, setStrudelCode] = useState(result.strudel);
+  const [strudelEdited, setStrudelEdited] = useState(false);
   const strudelEditorRef = useRef<StrudelEditorHandle | null>(null);
+
+  const handleActiveCodeChange = useCallback((code: string, edited: boolean) => {
+    setStrudelCode(code);
+    setStrudelEdited(edited);
+  }, []);
 
   function selectScope(nextScope: AnalysisScope) {
     const nextView = createScopeView(result, nextScope);
@@ -46,6 +52,7 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
           onModeChange={setMode}
           onTimeChange={setPlayhead}
           strudelEditorRef={strudelEditorRef}
+          projectStrudelPlayheads={!strudelEdited}
         />
         <div className={`analysis-grid${mode === 'strudel' ? ' analysis-grid--strudel' : ''}`}>
           <aside className="event-rail" aria-label="Event ledger">
@@ -65,7 +72,7 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
               scopeLabel={view.label}
               noteCode={scopeCode(result, view, 'notes')}
               midiCode={scopeCode(result, view, 'midi')}
-              onActiveCodeChange={setStrudelCode}
+              onActiveCodeChange={handleActiveCodeChange}
               editorHandleRef={strudelEditorRef}
             />
           </aside>

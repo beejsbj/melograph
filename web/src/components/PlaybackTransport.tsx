@@ -1,7 +1,7 @@
 import { Pause, Play, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState, type MutableRefObject } from 'react';
 import { formatPlaybackTime, type PlaybackMode, synthesizeContour, synthesizeNotes } from '../lib/playback';
-import { createStrudelPlayer, strudelPlayheadTimes, type StrudelPlayer } from '../lib/strudelPlayback';
+import { createStrudelPlayer, projectedStrudelPlayheadTimes, type StrudelPlayer } from '../lib/strudelPlayback';
 import type { AnalysisResult } from '../types';
 import { Button } from './Button';
 import type { StrudelEditorHandle } from '../lib/strudelEditor';
@@ -16,6 +16,7 @@ interface Props {
   onModeChange: (mode: PlaybackMode) => void;
   onTimeChange?: (time: number | number[]) => void;
   strudelEditorRef?: MutableRefObject<StrudelEditorHandle | null>;
+  projectStrudelPlayheads?: boolean;
 }
 
 const MODE_COPY: Record<PlaybackMode, string> = {
@@ -25,7 +26,7 @@ const MODE_COPY: Record<PlaybackMode, string> = {
   strudel: 'current editor code · loops independently',
 };
 
-export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rangeStart, rangeEnd, onModeChange, onTimeChange, strudelEditorRef }: Props) {
+export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rangeStart, rangeEnd, onModeChange, onTimeChange, strudelEditorRef, projectStrudelPlayheads = true }: Props) {
   const [sourceUrl, setSourceUrl] = useState('');
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(rangeStart);
@@ -45,6 +46,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
   const modeRef = useRef<PlaybackMode>(mode);
   const playingRef = useRef(false);
   const onTimeChangeRef = useRef(onTimeChange);
+  const projectStrudelPlayheadsRef = useRef(projectStrudelPlayheads);
 
   useEffect(() => {
     onTimeChangeRef.current = onTimeChange;
@@ -53,6 +55,11 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
   useEffect(() => {
     modeRef.current = mode;
   }, [mode]);
+
+  useEffect(() => {
+    projectStrudelPlayheadsRef.current = projectStrudelPlayheads;
+    if (mode === 'strudel' && !projectStrudelPlayheads) onTimeChangeRef.current?.([]);
+  }, [mode, projectStrudelPlayheads]);
 
   useEffect(() => {
     const url = URL.createObjectURL(sourceAudio);
@@ -101,7 +108,9 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     if (modeRef.current === 'voice') return audioRef.current?.currentTime ?? timeRef.current;
     if (modeRef.current === 'strudel') {
       const player = activeStrudelPlayerRef.current;
-      return player ? strudelPlayheadTimes(player.cycle(), result.phrases)[0] ?? rangeStart : timeRef.current;
+      return player
+        ? projectedStrudelPlayheadTimes(player.cycle(), result.phrases, projectStrudelPlayheadsRef.current)[0] ?? timeRef.current
+        : timeRef.current;
     }
     const context = contextRef.current;
     return context ? context.currentTime - synthStartedAtRef.current : timeRef.current;
@@ -121,7 +130,11 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     if (now - lastVisualUpdateRef.current >= 50) {
       lastVisualUpdateRef.current = now;
       if (modeRef.current === 'strudel' && activeStrudelPlayerRef.current) {
-        const playheads = strudelPlayheadTimes(activeStrudelPlayerRef.current.cycle(), result.phrases);
+        const playheads = projectedStrudelPlayheadTimes(
+          activeStrudelPlayerRef.current.cycle(),
+          result.phrases,
+          projectStrudelPlayheadsRef.current,
+        );
         commitTime(playheads[0] ?? rangeStart, playheads);
       } else commitTime(next);
     }
@@ -180,7 +193,9 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     stopOutput();
     const generation = outputGenerationRef.current;
     setError(null);
-    const initialStrudelPlayheads = selectedMode === 'strudel' ? strudelPlayheadTimes(0, result.phrases) : [];
+    const initialStrudelPlayheads = selectedMode === 'strudel'
+      ? projectedStrudelPlayheadTimes(0, result.phrases, projectStrudelPlayheadsRef.current)
+      : [];
     const start = selectedMode === 'strudel'
       ? initialStrudelPlayheads[0] ?? rangeStart
       : requestedTime >= rangeEnd - 0.01 ? rangeStart : requestedTime;
@@ -226,7 +241,11 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
 
   function pause() {
     const strudelPlayheads = modeRef.current === 'strudel' && activeStrudelPlayerRef.current
-      ? strudelPlayheadTimes(activeStrudelPlayerRef.current.cycle(), result.phrases)
+      ? projectedStrudelPlayheadTimes(
+        activeStrudelPlayerRef.current.cycle(),
+        result.phrases,
+        projectStrudelPlayheadsRef.current,
+      )
       : null;
     const pausedAt = strudelPlayheads?.[0] ?? currentOutputTime();
     stopOutput();
@@ -245,7 +264,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     modeRef.current = nextMode;
     onModeChange(nextMode);
     if (nextMode === 'strudel') {
-      const playheads = strudelPlayheadTimes(0, result.phrases);
+      const playheads = projectedStrudelPlayheadTimes(0, result.phrases, projectStrudelPlayheadsRef.current);
       commitTime(playheads[0] ?? rangeStart, playheads);
       void strudelPlayer().catch((caught) => {
         setError(caught instanceof Error ? caught.message : 'Strudel playback could not load.');
@@ -260,7 +279,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     setPlaying(false);
     if (audioRef.current) audioRef.current.currentTime = rangeStart;
     if (modeRef.current === 'strudel') {
-      const playheads = strudelPlayheadTimes(0, result.phrases);
+      const playheads = projectedStrudelPlayheadTimes(0, result.phrases, projectStrudelPlayheadsRef.current);
       commitTime(playheads[0] ?? rangeStart, playheads);
     } else commitTime(rangeStart);
   }
@@ -281,7 +300,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
           <span className="eyebrow">a / b audition</span>
           <strong>Hear each layer of the translation</strong>
         </div>
-        <small>{MODE_COPY[mode]}</small>
+        <small>{mode === 'strudel' && !projectStrudelPlayheads ? 'edited code · editor highlight stays exact' : MODE_COPY[mode]}</small>
       </div>
       <div className="audition__modes" role="group" aria-label="Playback layer">
         {(['voice', 'contour', 'notes', 'strudel'] as PlaybackMode[]).map((option) => (
