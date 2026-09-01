@@ -7,26 +7,32 @@ function fakeEditor() {
   let code = '';
   let onChange: ((update: { docChanged: boolean; state: { doc: { length: number; toString(): string } } }) => void) | undefined;
   const contentDOM = document.createElement('div');
+  const dom = document.createElement('div');
+  dom.className = 'cm-editor';
+  dom.append(contentDOM);
   const destroy = vi.fn();
   const doc = { get length() { return code.length; }, toString: () => code };
   const view = {
     state: { doc },
     contentDOM,
+    dom,
     dispatch({ changes }: { changes: { insert: string } }) {
       code = changes.insert;
       onChange?.({ docChanged: true, state: { doc } });
     },
     destroy,
   };
-  const factory = vi.fn((options: { initialCode: string; onChange: typeof onChange }) => {
+  const factory = vi.fn((options: { initialCode: string; onChange: typeof onChange; root: HTMLElement }) => {
     code = options.initialCode;
     onChange = options.onChange;
+    options.root.append(dom);
     return view;
   });
   const updateMiniLocations = vi.fn();
   const highlightMiniLocations = vi.fn();
   return {
     contentDOM,
+    dom,
     destroy,
     factory,
     updateMiniLocations,
@@ -78,7 +84,8 @@ describe('Strudel editor synchronization', () => {
 
   it('destroys the CodeMirror view on unmount', async () => {
     const root = document.createElement('div');
-    root.append(document.createElement('span'));
+    const sibling = document.createElement('span');
+    root.append(sibling);
     const editor = fakeEditor();
     const handle = await mountStrudelEditor(
       root,
@@ -91,6 +98,21 @@ describe('Strudel editor synchronization', () => {
     handle.destroy();
 
     expect(editor.destroy).toHaveBeenCalledOnce();
-    expect(root.childElementCount).toBe(0);
+    expect(root.childElementCount).toBe(1);
+    expect(root.firstElementChild).toBe(sibling);
+  });
+
+  it('does not clear a newer editor when a stale async mount is cancelled', async () => {
+    const root = document.createElement('div');
+    const staleEditor = fakeEditor();
+    const liveEditor = fakeEditor();
+    const stale = await mountStrudelEditor(root, 'note("C4")', vi.fn(), 'stale editor', staleEditor.loader);
+    await mountStrudelEditor(root, 'note("D4")', vi.fn(), 'live editor', liveEditor.loader);
+
+    stale.destroy();
+
+    expect(root.contains(staleEditor.dom)).toBe(false);
+    expect(root.contains(liveEditor.dom)).toBe(true);
+    expect(root.contains(liveEditor.contentDOM)).toBe(true);
   });
 });

@@ -11,6 +11,7 @@ interface EditorUpdate {
 interface EditorViewLike {
   state: { doc: EditorDocument };
   contentDOM?: HTMLElement;
+  dom?: HTMLElement;
   dispatch(transaction: { changes: { from: number; to: number; insert: string } }): void;
   destroy(): void;
 }
@@ -81,8 +82,9 @@ export async function mountStrudelEditor(
       }
     },
     destroy() {
+      const editorDom = view.dom ?? view.contentDOM?.closest<HTMLElement>('.cm-editor');
       view.destroy();
-      root.replaceChildren();
+      editorDom?.remove();
     },
   };
 }
