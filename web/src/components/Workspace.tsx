@@ -18,6 +18,7 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
   const [strudelCode, setStrudelCode] = useState(result.strudel);
   const [strudelEdited, setStrudelEdited] = useState(false);
   const strudelEditorRef = useRef<StrudelEditorHandle | null>(null);
+  const strudelLocationsRef = useRef<unknown[] | null>(null);
 
   const handleActiveCodeChange = useCallback((code: string, edited: boolean) => {
     setStrudelCode(code);
@@ -52,6 +53,7 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
           onModeChange={setMode}
           onTimeChange={setPlayhead}
           strudelEditorRef={strudelEditorRef}
+          strudelLocationsRef={strudelLocationsRef}
           projectStrudelPlayheads={!strudelEdited}
         />
         <div className={`analysis-grid${mode === 'strudel' ? ' analysis-grid--strudel' : ''}`}>
@@ -74,6 +76,7 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
               midiCode={scopeCode(result, view, 'midi')}
               onActiveCodeChange={handleActiveCodeChange}
               editorHandleRef={strudelEditorRef}
+              playbackLocationsRef={strudelLocationsRef}
             />
           </aside>
         </div>

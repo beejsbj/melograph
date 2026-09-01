@@ -16,6 +16,7 @@ interface Props {
   onModeChange: (mode: PlaybackMode) => void;
   onTimeChange?: (time: number | number[]) => void;
   strudelEditorRef?: MutableRefObject<StrudelEditorHandle | null>;
+  strudelLocationsRef?: MutableRefObject<unknown[] | null>;
   projectStrudelPlayheads?: boolean;
 }
 
@@ -26,7 +27,7 @@ const MODE_COPY: Record<PlaybackMode, string> = {
   strudel: 'current editor code · loops independently',
 };
 
-export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rangeStart, rangeEnd, onModeChange, onTimeChange, strudelEditorRef, projectStrudelPlayheads = true }: Props) {
+export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rangeStart, rangeEnd, onModeChange, onTimeChange, strudelEditorRef, strudelLocationsRef, projectStrudelPlayheads = true }: Props) {
   const [sourceUrl, setSourceUrl] = useState('');
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(rangeStart);
@@ -172,9 +173,15 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
     if (!strudelPlayerRef.current) {
       setStrudelLoading(true);
       strudelPlayerRef.current = createStrudelPlayer({
-        onLocations: (locations) => strudelEditorRef?.current?.setPlaybackLocations(locations),
+        onLocations: (locations) => {
+          if (strudelLocationsRef) strudelLocationsRef.current = locations;
+          strudelEditorRef?.current?.setPlaybackLocations(locations);
+        },
         onFrame: (frameTime, haps) => strudelEditorRef?.current?.highlightPlayback(frameTime, haps),
-        onClear: () => strudelEditorRef?.current?.clearPlayback(),
+        onClear: () => {
+          if (strudelLocationsRef) strudelLocationsRef.current = [];
+          strudelEditorRef?.current?.clearPlayback();
+        },
       })
         .then((player) => {
           setStrudelLoading(false);
@@ -269,7 +276,7 @@ export function PlaybackTransport({ result, sourceAudio, strudelCode, mode, rang
       void strudelPlayer().catch((caught) => {
         setError(caught instanceof Error ? caught.message : 'Strudel playback could not load.');
       });
-    }
+    } else commitTime(switchAt);
     if (wasPlaying) void playAt(nextMode, switchAt);
   }
 

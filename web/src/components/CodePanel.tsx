@@ -12,9 +12,10 @@ interface Props {
   midiCode: string;
   onActiveCodeChange?: (code: string, edited: boolean) => void;
   editorHandleRef?: MutableRefObject<StrudelEditorHandle | null>;
+  playbackLocationsRef?: MutableRefObject<unknown[] | null>;
 }
 
-export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCodeChange, editorHandleRef }: Props) {
+export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCodeChange, editorHandleRef, playbackLocationsRef }: Props) {
   const [pitchOutput, setPitchOutput] = useState<PitchOutput>('notes');
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
@@ -48,6 +49,7 @@ export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCo
       }
       editorRef.current = editor;
       if (editorHandleRef) editorHandleRef.current = editor;
+      if (playbackLocationsRef?.current) editor.setPlaybackLocations(playbackLocationsRef.current);
       editor.sync(codeRef.current);
       editor.label(`Editable Strudel code using ${pitchOutputRef.current}`);
     }).catch(() => {
