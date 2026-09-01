@@ -18,3 +18,19 @@ describe('control contrast', () => {
     expect(rule('.audition__mode--active span')).toContain('color: var(--brass-edge)');
   });
 });
+
+describe('capture notch composition', () => {
+  it('keeps the header divider from crossing the capture controls', () => {
+    expect(rule('.site-header')).not.toContain('border-bottom');
+  });
+
+  it('keeps compact progress between the record and file controls', () => {
+    const progress = rule('.recorder--notch .recorder__rule');
+    expect(progress).toContain('var(--notch-record-size)');
+    expect(progress).toContain('var(--notch-file-size)');
+  });
+
+  it('places the pitch engine status inside the notch', () => {
+    expect(rule('.capture-notch__engine')).toContain('position: absolute');
+  });
+});

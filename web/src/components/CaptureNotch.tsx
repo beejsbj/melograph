@@ -23,6 +23,7 @@ export function CaptureNotch({
 }: Props) {
   return (
     <div className={`capture-notch capture-notch--${status}${error ? ' capture-notch--error' : ''}`}>
+      <span className="capture-notch__engine"><i />praat / cpu-first</span>
       <Recorder
         compact
         disabled={status !== 'idle'}
