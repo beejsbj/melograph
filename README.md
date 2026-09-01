@@ -48,8 +48,10 @@ seconds by default) begins another take. One shared Full/Take selector changes t
 event ledger, graph, playback range, and code together. Full output receives
 `$TAKE_n` labels only when the recording contains multiple note-bearing takes;
 an individual take remains a bare pattern. Note names are the default, with precise
-MIDI values available as a toggle. Selecting Strudel docks the editor beside the
-graph on wide screens and reveals the live player in the shared audition transport.
+MIDI values available as a toggle. Selecting Strudel docks a syntax-highlighted
+CodeMirror editor beside the graph on wide screens and reveals the live player in
+the shared audition transport. The shared playhead follows Strudel's audio clock
+across the selected Full/Take loop.
 `/styleguide` exposes the same imported primitives and composition used by the app.
 
 The API rejects request bodies over 4 MB. The 45-second browser limit keeps mono
@@ -200,6 +202,7 @@ The named pilot fixture and current result are recorded in
 - NumPy: BSD-3-Clause
 - Parselmouth: GPL-3.0-or-later (Praat itself is GPL-3.0-or-later)
 - Strudel browser packages: AGPL-3.0-or-later
+- CodeMirror: MIT
 - Pitchy, browser MPM preview: MIT
 - librosa, optional pYIN tracker: ISC
 - aubio, optional live capture and fusion benchmark: GPL-3.0-or-later

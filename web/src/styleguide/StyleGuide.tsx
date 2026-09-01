@@ -1,6 +1,7 @@
 import { Mic } from 'lucide-react';
 import { Button } from '../components/Button';
 import { CaptureNotch } from '../components/CaptureNotch';
+import { CodePanel } from '../components/CodePanel';
 import { ContourChart } from '../components/ContourChart';
 import { Panel } from '../components/Panel';
 import { LivePitchPreview } from '../components/LivePitchPreview';
@@ -86,6 +87,14 @@ export function StyleGuide() {
       </Panel>
       <Panel eyebrow="hero composition" title="Contour with interpreted events" className="panel--brass-frame">
         <ContourChart result={specimen} />
+      </Panel>
+      <Panel eyebrow="first-party output" title="Editable Strudel">
+        <CodePanel
+          scopeKey="styleguide"
+          scopeLabel="Full capture"
+          noteCode={'note("A3 B3 A3").s("triangle")'}
+          midiCode={'note("57 59 57").s("triangle")'}
+        />
       </Panel>
     </main>
   );

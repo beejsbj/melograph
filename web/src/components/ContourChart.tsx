@@ -10,7 +10,7 @@ const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 
 
 interface Props {
   result: Pick<AnalysisResult, 'frames' | 'phrases' | 'duration_seconds'>;
-  playheadSeconds?: number;
+  playheadSeconds?: number | number[];
   rangeStart?: number;
   rangeEnd?: number;
 }
@@ -53,15 +53,16 @@ export function ContourChart({ result, playheadSeconds, rangeStart = 0, rangeEnd
         <NoteBlocks phrases={result.phrases} x={x} y={y} />
         {raw.map((path, index) => <path className="chart__raw" d={path} key={`raw-${index}`} />)}
         {repaired.map((path, index) => <path className="chart__repaired" d={path} key={`repaired-${index}`} />)}
-        {playheadSeconds !== undefined && (
+        {(playheadSeconds === undefined ? [] : Array.isArray(playheadSeconds) ? playheadSeconds : [playheadSeconds]).map((playhead, index) => (
           <line
             className="chart__playhead"
-            x1={x(Math.max(rangeStart, Math.min(rangeEnd, playheadSeconds)))}
-            x2={x(Math.max(rangeStart, Math.min(rangeEnd, playheadSeconds)))}
+            x1={x(Math.max(rangeStart, Math.min(rangeEnd, playhead)))}
+            x2={x(Math.max(rangeStart, Math.min(rangeEnd, playhead)))}
             y1={TOP}
             y2={HEIGHT - BOTTOM}
+            key={index}
           />
-        )}
+        ))}
       </svg>
       <div className="chart__legend">
         <span><i className="legend-line legend-line--raw" />raw voice</span>

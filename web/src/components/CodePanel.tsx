@@ -1,5 +1,6 @@
 import { Check, Copy, ExternalLink } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
+import { mountStrudelEditor, type StrudelEditorHandle } from '../lib/strudelEditor';
 import { Button } from './Button';
 
 export type PitchOutput = 'notes' | 'midi';
@@ -9,16 +10,68 @@ interface Props {
   scopeLabel: string;
   noteCode: string;
   midiCode: string;
-  onActiveCodeChange?: (code: string) => void;
+  onActiveCodeChange?: (code: string, edited: boolean) => void;
+  editorHandleRef?: MutableRefObject<StrudelEditorHandle | null>;
+  playbackLocationsRef?: MutableRefObject<unknown[] | null>;
 }
 
-export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCodeChange }: Props) {
+export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCodeChange, editorHandleRef, playbackLocationsRef }: Props) {
   const [pitchOutput, setPitchOutput] = useState<PitchOutput>('notes');
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
+  const [editorAttempt, setEditorAttempt] = useState(0);
+  const [editorFailed, setEditorFailed] = useState(false);
   const editKey = `${scopeKey}:${pitchOutput}`;
-  const code = edits[editKey] ?? outputCode(noteCode, midiCode, pitchOutput);
-  useEffect(() => onActiveCodeChange?.(code), [code, onActiveCodeChange]);
+  const generatedCode = outputCode(noteCode, midiCode, pitchOutput);
+  const code = edits[editKey] ?? generatedCode;
+  const edited = code !== generatedCode;
+  const editorRootRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<StrudelEditorHandle | null>(null);
+  const editKeyRef = useRef(editKey);
+  const codeRef = useRef(code);
+  const pitchOutputRef = useRef(pitchOutput);
+  const previousCodeRef = useRef(code);
+  editKeyRef.current = editKey;
+  codeRef.current = code;
+  pitchOutputRef.current = pitchOutput;
+
+  useEffect(() => onActiveCodeChange?.(code, edited), [code, edited, onActiveCodeChange]);
+  useEffect(() => {
+    const root = editorRootRef.current;
+    if (!root) return;
+    let cancelled = false;
+    setEditorFailed(false);
+    void mountStrudelEditor(root, codeRef.current, (nextCode) => {
+      setEdits((current) => ({ ...current, [editKeyRef.current]: nextCode }));
+    }, `Editable Strudel code using ${pitchOutput}`).then((editor) => {
+      if (cancelled) {
+        editor.destroy();
+        return;
+      }
+      editorRef.current = editor;
+      if (editorHandleRef) editorHandleRef.current = editor;
+      if (playbackLocationsRef?.current) editor.setPlaybackLocations(playbackLocationsRef.current);
+      editor.sync(codeRef.current);
+      editor.label(`Editable Strudel code using ${pitchOutputRef.current}`);
+    }).catch(() => {
+      if (!cancelled) setEditorFailed(true);
+    });
+    return () => {
+      cancelled = true;
+      editorRef.current?.destroy();
+      if (editorHandleRef) editorHandleRef.current = null;
+      editorRef.current = null;
+    };
+  }, [editorAttempt]);
+  useEffect(() => {
+    if (previousCodeRef.current !== code) {
+      previousCodeRef.current = code;
+      if (playbackLocationsRef) playbackLocationsRef.current = [];
+      editorRef.current?.clearPlayback();
+    }
+    editorRef.current?.sync(code);
+  }, [code, playbackLocationsRef]);
+  useEffect(() => editorRef.current?.label(`Editable Strudel code using ${pitchOutput}`), [pitchOutput]);
   const replUrl = useMemo(() => encodeStrudelUrl(code), [code]);
 
   async function copy() {
@@ -45,12 +98,23 @@ export function CodePanel({ scopeKey, scopeLabel, noteCode, midiCode, onActiveCo
           ))}
         </div>
       </div>
-      <textarea
-        value={code}
-        onChange={(event) => setEdits((current) => ({ ...current, [editKey]: event.target.value }))}
-        spellCheck={false}
-        aria-label={`Editable Strudel code using ${pitchOutput}`}
-      />
+      <div className="code-panel__editor" data-pitch-output={pitchOutput}>
+        <div className="code-panel__mount" ref={editorRootRef} />
+        {editorFailed && (
+          <div className="code-panel__fallback" role="status">
+            <textarea
+              aria-label={`Editable Strudel code using ${pitchOutput}`}
+              value={code}
+              onChange={(event) => setEdits((current) => ({ ...current, [editKey]: event.target.value }))}
+              spellCheck={false}
+            />
+            <div>
+              <span>syntax editor could not load</span>
+              <Button onClick={() => setEditorAttempt((attempt) => attempt + 1)}>retry editor</Button>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="code-panel__actions">
         <Button icon={copied ? <Check size={14} /> : <Copy size={14} />} onClick={() => void copy()}>{copied ? 'copied' : 'copy'}</Button>
         <a className="button button--brass brass" href={replUrl} target="_blank" rel="noreferrer">

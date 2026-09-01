@@ -9,7 +9,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@strudel/codemirror": "1.2.2",
     "@strudel/core": "1.2.2",
+    "@strudel/draw": "1.2.2",
     "@strudel/mini": "1.2.2",
     "@strudel/tonal": "1.2.2",
     "@strudel/transpiler": "1.2.2",
@@ -20,6 +22,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@types/node": "^22.20.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^6.1.1",

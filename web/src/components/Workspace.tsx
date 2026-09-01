@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { createScopeView, scopeCode, type AnalysisScope } from '../lib/scope';
 import type { PlaybackMode } from '../lib/playback';
 import type { AnalysisResult } from '../types';
@@ -8,35 +8,44 @@ import { NoteLedger } from './NoteLedger';
 import { Panel } from './Panel';
 import { PlaybackTransport } from './PlaybackTransport';
 import { ScopeSelector } from './ScopeSelector';
-import { StatusChip } from './StatusChip';
+import type { StrudelEditorHandle } from '../lib/strudelEditor';
 
 export function Workspace({ result, sourceAudio, sourceLabel }: { result: AnalysisResult; sourceAudio: Blob; sourceLabel: string }) {
   const [scope, setScope] = useState<AnalysisScope>('full');
   const [mode, setMode] = useState<PlaybackMode>('voice');
-  const [playhead, setPlayhead] = useState(0);
+  const [strudelActivated, setStrudelActivated] = useState(false);
+  const [playhead, setPlayhead] = useState<number | number[]>(0);
   const view = createScopeView(result, scope);
   const [strudelCode, setStrudelCode] = useState(result.strudel);
-  const notes = result.phrases.flatMap((phrase) => phrase.events).filter((event) => event.type === 'note').length;
+  const [strudelEdited, setStrudelEdited] = useState(false);
+  const [evaluatedStrudelCode, setEvaluatedStrudelCode] = useState<string | null>(null);
+  const strudelEditorRef = useRef<StrudelEditorHandle | null>(null);
+  const strudelLocationsRef = useRef<unknown[] | null>(null);
+
+  const handleActiveCodeChange = useCallback((code: string, edited: boolean) => {
+    setStrudelCode(code);
+    setStrudelEdited(edited);
+  }, []);
 
   function selectScope(nextScope: AnalysisScope) {
     const nextView = createScopeView(result, nextScope);
     setScope(nextScope);
+    setEvaluatedStrudelCode(null);
     setPlayhead(nextView.startSeconds);
+  }
+
+  function selectMode(nextMode: PlaybackMode) {
+    if (nextMode === 'strudel') setStrudelActivated(true);
+    setMode(nextMode);
   }
 
   return (
     <main className="workspace page-shell">
-      <div className="workspace__summary">
-        <div>
-          <span className="eyebrow">capture complete</span>
-          <h1>{result.phrases.length} {result.phrases.length === 1 ? 'take' : 'takes'}, {notes} note events.</h1>
-          <p>{sourceLabel} · {result.duration_seconds.toFixed(2)}s · Praat autocorrelation</p>
-        </div>
-        <StatusChip tone="ready">analysis ready</StatusChip>
-      </div>
-
       <div className="workspace__scopebar">
-        <div><span className="eyebrow">analysis scope</span><strong>{view.label}</strong></div>
+        <div className="workspace__scope-copy">
+          <span className="eyebrow">capture complete / {view.label}</span>
+          <h1>{sourceLabel} · {result.duration_seconds.toFixed(2)}s · Praat autocorrelation</h1>
+        </div>
         <ScopeSelector phrases={result.phrases} value={scope} onChange={selectScope} />
       </div>
 
@@ -49,8 +58,12 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
           mode={mode}
           rangeStart={view.startSeconds}
           rangeEnd={view.endSeconds}
-          onModeChange={setMode}
+          onModeChange={selectMode}
           onTimeChange={setPlayhead}
+          strudelEditorRef={strudelEditorRef}
+          strudelLocationsRef={strudelLocationsRef}
+          projectStrudelPlayheads={canProjectStrudelPlayheads(strudelCode, evaluatedStrudelCode, strudelEdited)}
+          onStrudelEvaluated={setEvaluatedStrudelCode}
         />
         <div className={`analysis-grid${mode === 'strudel' ? ' analysis-grid--strudel' : ''}`}>
           <aside className="event-rail" aria-label="Event ledger">
@@ -65,17 +78,25 @@ export function Workspace({ result, sourceAudio, sourceLabel }: { result: Analys
           />
           <aside className="strudel-dock" hidden={mode !== 'strudel'} aria-label="Editable Strudel">
             <header><span className="eyebrow">first-party output</span><strong>Editable Strudel</strong></header>
-            <CodePanel
-              scopeKey={view.key}
-              scopeLabel={view.label}
-              noteCode={scopeCode(result, view, 'notes')}
-              midiCode={scopeCode(result, view, 'midi')}
-              onActiveCodeChange={setStrudelCode}
-            />
+            {strudelActivated && (
+              <CodePanel
+                scopeKey={view.key}
+                scopeLabel={view.label}
+                noteCode={scopeCode(result, view, 'notes')}
+                midiCode={scopeCode(result, view, 'midi')}
+                onActiveCodeChange={handleActiveCodeChange}
+                editorHandleRef={strudelEditorRef}
+                playbackLocationsRef={strudelLocationsRef}
+              />
+            )}
           </aside>
         </div>
       </Panel>
       <p className="workspace__footnote">The contour is authoritative. Named notes and code are editable interpretations; slides and vibrato remain visible in the line.</p>
     </main>
   );
+}
+
+export function canProjectStrudelPlayheads(activeCode: string, evaluatedCode: string | null, edited: boolean) {
+  return !edited && activeCode === evaluatedCode;
 }

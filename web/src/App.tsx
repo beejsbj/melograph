@@ -4,7 +4,6 @@ import { AnalysisOverlay } from './components/AnalysisOverlay';
 import { CaptureNotch } from './components/CaptureNotch';
 import { LivePitchPreview } from './components/LivePitchPreview';
 import type { CaptureStatus } from './components/Recorder';
-import { StatusChip } from './components/StatusChip';
 import { Workspace } from './components/Workspace';
 import { analyzeWav } from './lib/api';
 import { audioBlobToWav } from './lib/audio';
@@ -109,10 +108,6 @@ function SiteHeader({ capture }: { capture: React.ReactNode }) {
     <header className="site-header page-shell">
       <a className="wordmark" href="/">melograph<span>///</span></a>
       {capture}
-      <div className="site-header__meta">
-        <StatusChip tone="live">praat / cpu-first</StatusChip>
-        <a href="https://strudel.cc" target="_blank" rel="noreferrer">strudel.cc ↗</a>
-      </div>
     </header>
   );
 }

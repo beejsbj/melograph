@@ -31,4 +31,5 @@ describe('analysis scope', () => {
     expect(scopeCode(result, createScopeView(result, 'full'), 'notes')).toBe('full names');
     expect(scopeCode(result, createScopeView(result, 2), 'midi')).toBe('take two midi');
   });
+
 });
