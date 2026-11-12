@@ -1,5 +1,12 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "preview/**": true,
+      "**": false
+    }
+  },
   "framework": "vite",
   "devCommand": "npm --prefix web run dev -- --port $PORT",
   "buildCommand": "npm --prefix web ci && npm --prefix web run build",
